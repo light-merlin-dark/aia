@@ -1,0 +1,17 @@
+{
+  "name": "@ai-advisor/anthropic-plugin",
+  "version": "1.0.0",
+  "description": "Anthropic Claude provider plugin for AI Advisor",
+  "main": "index.js",
+  "type": "module",
+  "aiAdvisor": {
+    "type": "plugin",
+    "provider": "anthropic"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0"
+  },
+  "peerDependencies": {
+    "ai-advisor": "*"
+  }
+}

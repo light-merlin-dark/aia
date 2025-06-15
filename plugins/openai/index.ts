@@ -1,0 +1,159 @@
+import OpenAI from 'openai';
+import type { 
+  AIProviderPlugin, 
+  AIExecuteOptions, 
+  AIResponse, 
+  PluginContext,
+  Logger 
+} from '../../src/plugins/types';
+
+interface OpenAIPluginConfig {
+  apiKey?: string;
+  organization?: string;
+  baseURL?: string;
+  defaultModel?: string;
+}
+
+class OpenAIPlugin implements AIProviderPlugin {
+  name = 'openai';
+  version = '1.0.0';
+  description = 'OpenAI GPT models provider';
+  author = 'AI Advisor Team';
+  
+  private client: OpenAI | null = null;
+  private logger: Logger | null = null;
+  private config: OpenAIPluginConfig = {};
+  
+  private models = [
+    'gpt-4-turbo-preview',
+    'gpt-4-turbo',
+    'gpt-4',
+    'gpt-4-32k',
+    'gpt-3.5-turbo',
+    'gpt-3.5-turbo-16k',
+  ];
+  
+  mcpContext = {
+    section: 'OpenAI Models',
+    models: [
+      { name: 'gpt-4-turbo', description: 'Latest GPT-4 Turbo with vision' },
+      { name: 'gpt-4', description: 'GPT-4 base model' },
+      { name: 'gpt-3.5-turbo', description: 'Fast and efficient GPT-3.5' },
+    ]
+  };
+
+  async onLoad(context: PluginContext): Promise<void> {
+    this.logger = context.services.logger;
+    this.config = context.pluginConfig || {};
+    
+    // Initialize OpenAI client
+    const apiKey = this.config.apiKey || process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error('OpenAI API key not configured. Set OPENAI_API_KEY environment variable.');
+    }
+    
+    this.client = new OpenAI({
+      apiKey,
+      organization: this.config.organization || process.env.OPENAI_ORG_ID,
+      baseURL: this.config.baseURL,
+    });
+    
+    this.logger?.info('OpenAI plugin loaded successfully');
+  }
+
+  listModels(): string[] {
+    return [...this.models];
+  }
+
+  async execute(options: AIExecuteOptions): Promise<AIResponse> {
+    if (!this.client) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const startTime = Date.now();
+    
+    try {
+      this.logger?.debug(`Executing OpenAI request with model: ${options.model}`);
+      
+      const messages: OpenAI.ChatCompletionMessageParam[] = [];
+      
+      if (options.systemPrompt) {
+        messages.push({ role: 'system', content: options.systemPrompt });
+      }
+      
+      messages.push({ role: 'user', content: options.prompt });
+
+      const completion = await this.client.chat.completions.create({
+        model: options.model,
+        messages,
+        temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens,
+      });
+
+      const response = completion.choices[0];
+      const usage = completion.usage;
+
+      return {
+        model: options.model,
+        provider: this.name,
+        content: response.message.content || '',
+        usage: usage ? {
+          promptTokens: usage.prompt_tokens,
+          completionTokens: usage.completion_tokens,
+          totalTokens: usage.total_tokens,
+        } : undefined,
+        metadata: {
+          finishReason: response.finish_reason,
+          durationMs: Date.now() - startTime,
+        }
+      };
+    } catch (error: any) {
+      this.logger?.error(`OpenAI execution error: ${error.message}`);
+      
+      return {
+        model: options.model,
+        provider: this.name,
+        content: '',
+        error: error.message,
+        isError: true,
+        metadata: {
+          durationMs: Date.now() - startTime,
+          errorType: error.type || 'unknown',
+        }
+      };
+    }
+  }
+
+  validateConfig(config: any): boolean {
+    if (!config || typeof config !== 'object') {
+      return false;
+    }
+    
+    // apiKey can come from env var, so not required in config
+    if (config.apiKey && typeof config.apiKey !== 'string') {
+      return false;
+    }
+    
+    if (config.organization && typeof config.organization !== 'string') {
+      return false;
+    }
+    
+    if (config.baseURL && typeof config.baseURL !== 'string') {
+      return false;
+    }
+    
+    return true;
+  }
+
+  getRequiredEnvVars(): string[] {
+    return ['OPENAI_API_KEY'];
+  }
+
+  isModelAvailable(model: string): boolean {
+    return this.models.includes(model);
+  }
+}
+
+// Export as default for the plugin loader
+export default new OpenAIPlugin();

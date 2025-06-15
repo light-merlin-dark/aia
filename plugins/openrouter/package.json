@@ -1,0 +1,15 @@
+{
+  "name": "@ai-advisor/openrouter-plugin",
+  "version": "1.0.0",
+  "description": "OpenRouter multi-model provider plugin for AI Advisor",
+  "main": "index.js",
+  "type": "module",
+  "aiAdvisor": {
+    "type": "plugin",
+    "provider": "openrouter"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "ai-advisor": "*"
+  }
+}
