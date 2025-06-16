@@ -51,3 +51,7 @@ tmp/
 temp/
 *.tmp
 *.temp
+
+# Claude
+CLAUDE.MD
+CLAUDE.md

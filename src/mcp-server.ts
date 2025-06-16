@@ -28,7 +28,7 @@ BASIC USAGE:
   if (enabledPlugins.length > 0) {
     description += "\n\nAVAILABLE MODELS:";
     for (const plugin of enabledPlugins) {
-      const models = plugin.listModels?.() || [];
+      const models = ('listModels' in plugin && typeof plugin.listModels === 'function') ? plugin.listModels() : [];
       if (models.length > 0) {
         description += `\n• ${plugin.name}: ${models.join(", ")}`;
       }
@@ -46,18 +46,20 @@ async function main() {
 
   // Initialize MCP server
   const server = new McpServer({
-    name: "ai-advisor",
+    name: "aia",
     version: "0.1.0",
-    description: "AI Advisor - Consult multiple AI models in parallel for technical advice"
+    description: "AIA - Consult multiple AI models in parallel for technical advice"
   });
 
   // Register the main consult tool with dynamic description
   server.tool(
     "consult",
-    consultSchema,
+    buildConsultDescription(registry),
     async (args) => {
       try {
-        const { prompt, files, models, bestOf } = args;
+        // Validate args with schema
+        const validated = consultSchema.parse(args);
+        const { prompt, files, models, bestOf } = validated;
         
         // Use configured default model if none specified
         const targetModels = models && models.length > 0 
@@ -109,7 +111,7 @@ async function main() {
       for (const tool of plugin.mcpTools) {
         server.tool(
           tool.name,
-          tool.inputSchema,
+          tool.description || `Plugin tool: ${tool.name}`,
           async (args) => {
             try {
               const result = await tool.handler(args, { registry, config });
@@ -134,11 +136,7 @@ async function main() {
     }
   }
 
-  // Update tool description dynamically
-  const consultTool = server.tool("consult");
-  if (consultTool) {
-    consultTool.description = buildConsultDescription(registry);
-  }
+  // Tool description is set during registration
 
   // Connect to stdio transport
   await server.connect(new StdioServerTransport());

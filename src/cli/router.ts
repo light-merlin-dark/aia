@@ -134,9 +134,9 @@ export class CLIRouter {
 
   private showGeneralHelp(): CommandResult {
     const lines = [
-      'AI Advisor - Parallel AI model consultation',
+      'AIA - Parallel AI model consultation',
       '',
-      'Usage: ai-advisor <command> [options]',
+      'Usage: aia <command> [options]',
       '',
       'Commands:'
     ];
@@ -146,7 +146,7 @@ export class CLIRouter {
       lines.push(`  ${name.padEnd(15)} ${command.description}`);
     }
 
-    lines.push('', "Run 'ai-advisor <command> --help' for command-specific help.");
+    lines.push('', "Run 'aia <command> --help' for command-specific help.");
 
     console.log(lines.join('\n'));
     return { success: true };

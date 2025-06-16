@@ -132,7 +132,7 @@ export class FileResolver {
     
     // Read file content
     try {
-      const content = readFileSync(resolvedPath, context.encoding);
+      const content = readFileSync(resolvedPath, context.encoding) as string;
       return {
         path: resolvedPath,
         originalPath,

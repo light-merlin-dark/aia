@@ -1,7 +1,7 @@
 {
-  "name": "@ai-advisor/anthropic-plugin",
+  "name": "@aia/anthropic-plugin",
   "version": "1.0.0",
-  "description": "Anthropic Claude provider plugin for AI Advisor",
+  "description": "Anthropic Claude provider plugin for AIA",
   "main": "index.js",
   "type": "module",
   "aiAdvisor": {
@@ -12,6 +12,6 @@
     "@anthropic-ai/sdk": "^0.24.0"
   },
   "peerDependencies": {
-    "ai-advisor": "*"
+    "aia": "*"
   }
 }

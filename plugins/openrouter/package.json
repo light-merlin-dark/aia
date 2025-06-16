@@ -1,7 +1,7 @@
 {
-  "name": "@ai-advisor/openrouter-plugin",
+  "name": "@aia/openrouter-plugin",
   "version": "1.0.0",
-  "description": "OpenRouter multi-model provider plugin for AI Advisor",
+  "description": "OpenRouter multi-model provider plugin for AIA",
   "main": "index.js",
   "type": "module",
   "aiAdvisor": {
@@ -10,6 +10,6 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "ai-advisor": "*"
+    "aia": "*"
   }
 }

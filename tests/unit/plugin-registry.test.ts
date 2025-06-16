@@ -31,7 +31,7 @@ describe('PluginRegistry with new loader', () => {
   let registry: PluginRegistry;
   let mockLoader: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset the registry singleton
     resetPluginRegistry();
     

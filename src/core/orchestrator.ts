@@ -1,9 +1,9 @@
-import { AIProviderPlugin, AIResponse } from '../plugins/types';
+import { AIResponse } from '../plugins/types';
 import { PluginRegistry } from '../plugins/registry';
 import { FileResolver } from '../services/file-resolver';
 import { Logger } from '../services/logger';
 import { buildPrompt } from './prompt-builder';
-import pRetry from 'p-retry';
+import pRetry, { AbortError } from 'p-retry';
 
 export interface OrchestrateOptions {
   prompt: string;
@@ -156,7 +156,7 @@ export class Orchestrator {
           
           // Check if we should retry
           if (error.name === 'AbortError') {
-            throw new pRetry.AbortError(`Timeout after ${timeout}ms`);
+            throw new AbortError(`Timeout after ${timeout}ms`);
           }
           
           // For rate limits, wait longer before retry

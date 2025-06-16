@@ -91,7 +91,7 @@ export class PluginRegistry implements IPluginRegistry {
     // Check runtime dependencies
     if (plugin.runtimeDependencies) {
       for (const [depName, dep] of Object.entries(plugin.runtimeDependencies)) {
-        if (dep.required && !this.checkRuntimeDependency(dep.service)) {
+        if (dep.required && !this.checkRuntimeDependency()) {
           throw new Error(
             `Plugin ${name} requires ${depName}. ${dep.hint || 'Please install it.'}`
           );
@@ -216,7 +216,7 @@ export class PluginRegistry implements IPluginRegistry {
     return 'execute' in plugin && 'listModels' in plugin;
   }
   
-  private checkRuntimeDependency(service: string): boolean {
+  private checkRuntimeDependency(): boolean {
     // This is a simplified check - in production you'd want more sophisticated checks
     // For now, we'll assume the dependency exists if we can't check it
     return true;

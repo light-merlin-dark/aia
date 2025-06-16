@@ -1,7 +1,7 @@
 {
-  "name": "@ai-advisor/openai-plugin",
+  "name": "@aia/openai-plugin",
   "version": "1.0.0",
-  "description": "OpenAI provider plugin for AI Advisor",
+  "description": "OpenAI provider plugin for AIA",
   "main": "index.js",
   "type": "module",
   "aiAdvisor": {
@@ -12,6 +12,6 @@
     "openai": "^4.52.0"
   },
   "peerDependencies": {
-    "ai-advisor": "*"
+    "aia": "*"
   }
 }

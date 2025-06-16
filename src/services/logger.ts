@@ -26,4 +26,28 @@ export class Logger {
   error(message: string, ...args: any[]): void {
     console.error(chalk.red(this.formatMessage('ERROR', message, ...args)));
   }
+  
+  log(level: string, message: string, ...args: any[]): void {
+    switch (level.toLowerCase()) {
+      case 'debug':
+        this.debug(message, ...args);
+        break;
+      case 'info':
+        this.info(message, ...args);
+        break;
+      case 'warn':
+        this.warn(message, ...args);
+        break;
+      case 'error':
+        this.error(message, ...args);
+        break;
+      default:
+        this.info(message, ...args);
+    }
+  }
+}
+
+// Factory function for creating logger instances
+export function createLogger(context: string): Logger {
+  return new Logger(context);
 }

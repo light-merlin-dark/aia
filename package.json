@@ -1,15 +1,15 @@
 {
-  "name": "ai-advisor",
+  "name": "aia",
   "version": "0.1.0",
-  "description": "AI Advisor - Parallel AI model consultation CLI and MCP server",
+  "description": "AIA - Parallel AI model consultation CLI and MCP server",
   "keywords": ["ai", "cli", "mcp", "openai", "anthropic", "llm"],
   "author": "Merlin",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "ai-advisor": "dist/index.js",
-    "ai-advisor-mcp": "dist/mcp-server.js"
+    "aia": "dist/index.js",
+    "aia-mcp": "dist/mcp-server.js"
   },
   "files": [
     "dist/",

@@ -1,10 +1,10 @@
 import { CommandSpec, CommandResult } from '../types';
 import { createLogger } from '../../services/logger';
-import { Orchestrator } from '../../core/orchestrator';
-import { PromptBuilder } from '../../core/prompt-builder';
+import { orchestrate } from '../../core/orchestrator';
+import { buildPrompt } from '../../core/prompt-builder';
 import { getPluginRegistry } from '../../plugins/registry';
-import { ConfigManager } from '../../config/manager';
-import { startWizard } from '../../config/wizard';
+import { getConfig } from '../../config/manager';
+import { FileResolver } from '../../services/file-resolver';
 import chalk from 'chalk';
 
 const logger = createLogger('ConsultCommand');
@@ -21,7 +21,7 @@ interface ConsultOptions {
 const consultCommand: CommandSpec = {
   name: 'consult',
   description: 'Consult AI models with a prompt',
-  help: `Usage: ai-advisor consult [prompt] [options]
+  help: `Usage: aia consult [prompt] [options]
 
 Description:
   Consult one or more AI models with a prompt. You can attach files and directories
@@ -40,13 +40,13 @@ Options:
 
 Examples:
   # Single model consultation
-  ai-advisor consult "Explain this code" -f src/index.ts
+  aia consult "Explain this code" -f src/index.ts
 
   # Multi-model consultation
-  ai-advisor consult "Design a caching strategy" -m gpt-4 claude-3-opus
+  aia consult "Design a caching strategy" -m gpt-4 claude-3-opus
 
   # Best-of selection
-  ai-advisor consult "Complex question" -m gpt-4 claude-3 --best-of
+  aia consult "Complex question" -m gpt-4 claude-3 --best-of
 
   # Using stdin
   echo "What is this?" | ai-advisor consult -f image.png`,
@@ -119,16 +119,8 @@ Examples:
         };
       }
 
-      // Initialize configuration
-      const configManager = new ConfigManager();
-      
-      // Check if configuration exists
-      if (!await configManager.exists()) {
-        console.log(chalk.yellow('No configuration found. Starting setup wizard...'));
-        await startWizard();
-      }
-
-      const config = await configManager.load();
+      // Get configuration (will run wizard if needed)
+      const config = await getConfig();
 
       // Initialize plugin registry
       const registry = getPluginRegistry();
@@ -141,7 +133,7 @@ Examples:
         if (Array.isArray(opts.models)) {
           models = opts.models;
         } else if (typeof opts.models === 'string') {
-          models = opts.models.split(',').map(m => m.trim());
+          models = (opts.models as string).split(',').map((m: string) => m.trim());
         }
       }
 
@@ -162,48 +154,42 @@ Examples:
         if (Array.isArray(opts.files)) {
           files.push(...opts.files);
         } else if (typeof opts.files === 'string') {
-          files.push(...opts.files.split(',').map(f => f.trim()));
+          files.push(...(opts.files as string).split(',').map((f: string) => f.trim()));
         }
       }
 
-      const dirs: string[] = [];
       if (opts.dirs) {
         if (Array.isArray(opts.dirs)) {
-          dirs.push(...opts.dirs);
+          files.push(...opts.dirs);
         } else if (typeof opts.dirs === 'string') {
-          dirs.push(...opts.dirs.split(',').map(d => d.trim()));
+          files.push(...(opts.dirs as string).split(',').map((d: string) => d.trim()));
         }
       }
 
       // Build prompt with attachments
-      const promptBuilder = new PromptBuilder();
-      const enhancedPrompt = await promptBuilder.build({
-        prompt,
-        files,
-        directories: dirs,
-        workingDirectory: ctx.cwd
-      });
+      let enhancedPrompt = prompt;
+      if (files.length > 0) {
+        const resolvedFiles = await FileResolver.resolveFiles(files, {
+          workingDirectory: ctx.cwd
+        });
+        enhancedPrompt = buildPrompt(prompt, resolvedFiles);
+      }
 
       if (verbose) {
         logger.info(`Consulting models: ${models.join(', ')}`);
         if (files.length > 0) {
           logger.info(`Attached files: ${files.join(', ')}`);
         }
-        if (dirs.length > 0) {
-          logger.info(`Attached directories: ${dirs.join(', ')}`);
-        }
       }
 
-      // Create orchestrator and execute
-      const orchestrator = new Orchestrator(registry);
-      const result = await orchestrator.consult({
+      // Execute consultation
+      const result = await orchestrate({
         prompt: enhancedPrompt,
         models,
         bestOf: opts.bestOf,
-        options: {
-          temperature: 0.7,
-          maxTokens: undefined
-        }
+        registry,
+        maxRetries: config.maxRetries,
+        timeout: config.timeout
       });
 
       // Output results

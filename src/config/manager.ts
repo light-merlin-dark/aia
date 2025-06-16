@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { encrypt, decrypt } from './crypto';
@@ -32,8 +32,8 @@ export class ConfigManager {
   private logger = new Logger('ConfigManager');
   
   // Configuration paths
-  private readonly CONFIG_DIR = join(homedir(), '.ai-advisor');
-  private readonly CONFIG_FILE = join(this.CONFIG_DIR, 'config.json');
+  private readonly CONFIG_DIR = join(homedir(), '.aia');
+  private readonly CONFIG_FILE = join(this.CONFIG_DIR, 'config.enc');
   private readonly KEY_FILE = join(this.CONFIG_DIR, 'key');
   
   // Absolute path to project .env file as requested
@@ -58,6 +58,13 @@ export class ConfigManager {
       mkdirSync(this.CONFIG_DIR, { recursive: true });
     }
     
+    // Migrate old config.json to config.enc if it exists
+    const oldConfigPath = join(this.CONFIG_DIR, 'config.json');
+    if (existsSync(oldConfigPath) && !existsSync(this.CONFIG_FILE)) {
+      this.logger.info('Migrating config.json to config.enc');
+      renameSync(oldConfigPath, this.CONFIG_FILE);
+    }
+    
     // Load or create configuration
     if (existsSync(this.CONFIG_FILE) && existsSync(this.KEY_FILE)) {
       this.config = await this.loadConfig();
@@ -71,7 +78,12 @@ export class ConfigManager {
     return this.config;
   }
   
-  async saveConfig(): Promise<void> {
+  async saveConfig(newConfig?: AIAdvisorConfig): Promise<void> {
+    // If new config provided, update the internal config
+    if (newConfig) {
+      this.config = newConfig;
+    }
+    
     if (!this.config) {
       throw new Error('No configuration to save');
     }
