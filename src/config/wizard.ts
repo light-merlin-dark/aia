@@ -76,10 +76,67 @@ export async function runOnboardingWizard(
     return config;
   }
   
+  // Ask for pricing (optional)
+  const { configurePricing } = await prompts({
+    type: 'confirm',
+    name: 'configurePricing',
+    message: 'Configure pricing for cost tracking?',
+    initial: false
+  });
+  
+  let pricing;
+  if (configurePricing) {
+    console.log(chalk.gray('\nExamples: $0.15, $5.00, 10.50'));
+    
+    const { inputCost } = await prompts({
+      type: 'text',
+      name: 'inputCost',
+      message: 'Token input cost ($/1M):',
+      validate: (value: string) => {
+        const parsed = parseFloat(value.replace(/^\$/, ''));
+        if (isNaN(parsed)) return 'Please enter a valid number';
+        if (parsed < 0) return 'Cost must be non-negative';
+        if (parsed > 1000) return 'Cost seems too high (max $1000/M)';
+        return true;
+      },
+      format: (value: string) => {
+        const num = parseFloat(value.replace(/^\$/, ''));
+        return isNaN(num) ? 0 : num;
+      }
+    });
+    
+    const { outputCost } = await prompts({
+      type: 'text',
+      name: 'outputCost',
+      message: 'Token output cost ($/1M):',
+      validate: (value: string) => {
+        const parsed = parseFloat(value.replace(/^\$/, ''));
+        if (isNaN(parsed)) return 'Please enter a valid number';
+        if (parsed < 0) return 'Cost must be non-negative';
+        if (parsed > 1000) return 'Cost seems too high (max $1000/M)';
+        return true;
+      },
+      format: (value: string) => {
+        const num = parseFloat(value.replace(/^\$/, ''));
+        return isNaN(num) ? 0 : num;
+      }
+    });
+    
+    if (inputCost !== undefined && outputCost !== undefined) {
+      pricing = {
+        [model]: {
+          inputCostPerMillion: inputCost,
+          outputCostPerMillion: outputCost
+        }
+      };
+    }
+  }
+  
   // Save configuration
   config.services[service] = {
     apiKey,
-    models: [model]
+    models: [model],
+    ...(pricing && { pricing })
   };
   
   // Set as default model if it's the first one

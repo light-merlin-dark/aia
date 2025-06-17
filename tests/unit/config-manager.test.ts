@@ -23,8 +23,8 @@ function getNewConfigManager(): ConfigManager {
 describe('ConfigManager', () => {
   const mockHomeDir = '/home/user';
   const mockConfigDir = '/home/user/.aia';
-  const mockConfigFile = '/home/user/.ai-advisor/config.enc';
-  const mockKeyFile = '/home/user/.ai-advisor/key';
+  const mockConfigFile = '/home/user/.aia/config.enc';
+  const mockKeyFile = '/home/user/.aia/key';
   const mockEnvFile = '/Users/merlin/_dev/aia/.env';
   
   const mockConfig: AIAdvisorConfig = {

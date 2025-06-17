@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Orchestrator, orchestrate } from '../../src/core/orchestrator';
-import { PluginRegistry } from '../../src/plugins/registry';
 import { FileResolver } from '../../src/services/file-resolver';
 import { buildPrompt } from '../../src/core/prompt-builder';
 import type { AIProviderPlugin, AIResponse } from '../../src/plugins/types';
@@ -11,7 +10,7 @@ vi.mock('../../src/services/file-resolver');
 vi.mock('../../src/services/logger');
 vi.mock('../../src/core/prompt-builder');
 vi.mock('p-retry', () => ({
-  default: vi.fn((fn: any, options: any) => fn()),
+  default: vi.fn((fn: any, _options: any) => fn()),
   AbortError: class AbortError extends Error {
     constructor(message: string) {
       super(message);

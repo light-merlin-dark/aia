@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PluginRegistry, resetPluginRegistry } from '../../src/plugins/registry';
-import { PluginLoader } from '../../src/plugins/loader';
 
 // Mock the loader
 vi.mock('../../src/plugins/loader', () => {

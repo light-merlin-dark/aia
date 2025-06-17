@@ -251,7 +251,7 @@ describe('CLIRouter', () => {
       const result = await router.route([], mockContext);
       
       expect(result.success).toBe(true);
-      expect(consoleOutput.join('\n')).toContain('AI Advisor - Parallel AI model consultation');
+      expect(consoleOutput.join('\n')).toContain('AIA - Parallel AI model consultation');
       expect(consoleOutput.join('\n')).toContain('consult');
       expect(consoleOutput.join('\n')).toContain('configure');
     });
@@ -260,14 +260,14 @@ describe('CLIRouter', () => {
       const result = await router.route(['--help'], mockContext);
       
       expect(result.success).toBe(true);
-      expect(consoleOutput.join('\n')).toContain('AI Advisor - Parallel AI model consultation');
+      expect(consoleOutput.join('\n')).toContain('AIA - Parallel AI model consultation');
     });
     
     it('should show general help with -h flag', async () => {
       const result = await router.route(['-h'], mockContext);
       
       expect(result.success).toBe(true);
-      expect(consoleOutput.join('\n')).toContain('AI Advisor - Parallel AI model consultation');
+      expect(consoleOutput.join('\n')).toContain('AIA - Parallel AI model consultation');
     });
     
     it('should show command-specific help', async () => {

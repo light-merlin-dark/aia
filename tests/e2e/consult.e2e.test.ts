@@ -144,9 +144,9 @@ describe('AI Advisor E2E Tests', () => {
     expect(fileResolutionLogs.length).toBeGreaterThan(0);
     
     // Find the full prompt that was built (with file contents)
-    const orchestratorLogs = capturedLogs.filter(log => 
-      log.level === 'debug' && log.message.includes('Executing model')
-    );
+    // const orchestratorLogs = capturedLogs.filter(log => 
+    //   log.level === 'debug' && log.message.includes('Executing model')
+    // );
     
     // Log what was actually sent to the AI
     console.log('\n=== E2E Test: Files Attached ===');
@@ -208,7 +208,7 @@ describe('AI Advisor E2E Tests', () => {
   
   afterAll(() => {
     // Clean up test config
-    const configDir = join(homedir(), '.ai-advisor');
+    const configDir = join(homedir(), '.aia');
     if (existsSync(configDir)) {
       rmSync(configDir, { recursive: true, force: true });
     }

@@ -4,6 +4,8 @@ import { FileResolver } from '../services/file-resolver';
 import { Logger } from '../services/logger';
 import { buildPrompt } from './prompt-builder';
 import pRetry, { AbortError } from 'p-retry';
+import { tokenizer, CostEstimate } from './tokenizer';
+import { getConfig } from '../config/manager';
 
 export interface OrchestrateOptions {
   prompt: string;
@@ -21,6 +23,8 @@ export interface OrchestrateResult {
   durationMs: number;
   bestIndex?: number;
   error?: string;
+  costs?: CostEstimate[];
+  totalCost?: number;
 }
 
 export class Orchestrator {
@@ -99,6 +103,9 @@ export class Orchestrator {
         bestIndex = await this.selectBestResponse(responses, prompt, registry);
       }
       
+      // Calculate costs if pricing is configured
+      const costResults = await this.calculateCosts(responses, fullPrompt);
+      
       const durationMs = Date.now() - startTime;
       this.logger.info(`Orchestration completed in ${durationMs}ms`);
       
@@ -106,7 +113,9 @@ export class Orchestrator {
         responses,
         failed,
         durationMs,
-        bestIndex
+        bestIndex,
+        costs: costResults.costs,
+        totalCost: costResults.totalCost
       };
     } catch (error: any) {
       const durationMs = Date.now() - startTime;
@@ -242,6 +251,19 @@ ${response.content.slice(0, 500)}${response.content.length > 500 ? '...' : ''}
 Please respond with ONLY the number of the best response (e.g., "1" or "2" or "3").`;
     
     return prompt;
+  }
+  
+  private async calculateCosts(
+    responses: AIResponse[],
+    prompt: string
+  ): Promise<{ costs: CostEstimate[]; totalCost: number }> {
+    try {
+      const config = await getConfig();
+      return await tokenizer.calculateResponseCosts(responses, prompt, config);
+    } catch (error) {
+      this.logger.warn('Failed to calculate costs:', error);
+      return { costs: [], totalCost: 0 };
+    }
   }
 }
 

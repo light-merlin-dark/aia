@@ -59,17 +59,39 @@ Once configured, AI agents gain access to:
     {
       "model": "gpt-4-turbo",
       "content": "...",
-      "metadata": { "tokensUsed": 1234 }
+      "usage": {
+        "promptTokens": 150,
+        "completionTokens": 350,
+        "totalTokens": 500
+      },
+      "metadata": {}
     },
     {
       "model": "claude-3-opus",
       "content": "...",
-      "metadata": { "tokensUsed": 2345 }
+      "usage": {
+        "promptTokens": 150,
+        "completionTokens": 425,
+        "totalTokens": 575
+      },
+      "metadata": {}
     }
   ],
   "failed": [],
   "durationMs": 3456,
-  "bestIndex": 0  // Only if bestOf=true
+  "bestIndex": 0,  // Only if bestOf=true
+  "costs": [
+    {
+      "model": "gpt-4-turbo",
+      "provider": "openai",
+      "inputTokens": 150,
+      "outputTokens": 350,
+      "inputCost": 0.0015,
+      "outputCost": 0.0105,
+      "totalCost": 0.012
+    }
+  ],
+  "totalCost": 0.025  // Sum of all model costs
 }
 ```
 
@@ -87,6 +109,33 @@ Advanced file handling for AI agents:
 - Configurable timeouts (60s first attempt, 90s retry)
 - Comprehensive error tracking and logging
 
+### 💰 Cost Tracking
+Real-time cost calculation for all API calls:
+- Automatic token counting using actual API usage data
+- Fallback token estimation for providers without usage data
+- Per-model cost breakdown with formatted display
+- Total cost aggregation for multi-model queries
+- Configure pricing during setup or via CLI commands
+
+```bash
+# Configure pricing
+aia services cost set openai gpt-4-turbo --input 10 --output 30
+
+# List all configured pricing
+aia services cost list
+
+# Remove pricing configuration
+aia services cost remove openai gpt-4-turbo
+```
+
+Cost display in responses:
+```
+=== gpt-4-turbo ===
+[Response content...]
+
+Cost: $0.0125 (150 in, 350 out)
+```
+
 ### 🔐 Secure Configuration
 Interactive setup with encrypted credential storage:
 ```bash
@@ -97,7 +146,8 @@ The streamlined setup will:
 1. Present a simple service selection menu
 2. Accept model string directly (e.g., "o3", "claude-3-opus-20240229")
 3. Securely input API keys
-4. Encrypt and save configuration (AES-256-GCM)
+4. Optionally configure pricing for cost tracking ($/M tokens)
+5. Encrypt and save configuration (AES-256-GCM)
 
 ## 📦 Installation
 

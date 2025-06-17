@@ -6,6 +6,15 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts', 'src/**/tests/*.test.ts'],
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        maxThreads: 4,
+        minThreads: 1
+      }
+    },
+    bail: parseInt(process.env.BAIL || '0'), // Use BAIL=1 to stop on first failure
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

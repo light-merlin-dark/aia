@@ -4,8 +4,6 @@ import { join } from 'path';
 
 describe('MCP Server E2E Tests', () => {
   let mcpProcess: ChildProcess;
-  let serverOutput = '';
-  let serverError = '';
   
   beforeAll(async () => {
     // Use the user's actual configuration instead of test config
@@ -18,12 +16,10 @@ describe('MCP Server E2E Tests', () => {
 
     // Capture all output for debugging
     mcpProcess.stdout?.on('data', (data) => {
-      serverOutput += data.toString();
       console.log('[MCP stdout]:', data.toString());
     });
 
     mcpProcess.stderr?.on('data', (data) => {
-      serverError += data.toString();
       console.error('[MCP stderr]:', data.toString());
     });
 

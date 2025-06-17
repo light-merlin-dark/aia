@@ -5,12 +5,20 @@ import { encrypt, decrypt } from './crypto';
 import { runOnboardingWizard } from './wizard';
 import { Logger } from '../services/logger';
 
+export interface ModelPricing {
+  inputCostPerMillion: number;   // dollars per million input tokens
+  outputCostPerMillion: number;  // dollars per million output tokens
+}
+
 export interface AIAdvisorConfig {
   services: {
     [provider: string]: {
       apiKey: string;
       models?: string[];
       endpoint?: string;
+      pricing?: {
+        [model: string]: ModelPricing;
+      };
     };
   };
   defaultModel?: string;

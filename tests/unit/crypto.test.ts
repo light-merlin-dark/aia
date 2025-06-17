@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { encrypt, decrypt, hashValue, maskValue } from '../../src/config/crypto';
 import * as fs from 'fs';
-import * as crypto from 'crypto';
 
 // Mock fs module
 vi.mock('fs');
@@ -21,11 +20,11 @@ describe('crypto module', () => {
   describe('encrypt and decrypt', () => {
     it('should encrypt and decrypt data successfully', async () => {
       // Mock fs operations to capture generated key
-      vi.mocked(fs.existsSync).mockImplementation((path) => {
+      vi.mocked(fs.existsSync).mockImplementation((_path) => {
         return generatedKey !== null;
       });
       
-      vi.mocked(fs.writeFileSync).mockImplementation((path, data) => {
+      vi.mocked(fs.writeFileSync).mockImplementation((_path, data) => {
         if (Buffer.isBuffer(data) && data.length === 32) {
           generatedKey = data;
         }

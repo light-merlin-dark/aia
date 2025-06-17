@@ -7,7 +7,7 @@ import { randomBytes } from 'crypto';
 export function setupTestConfig() {
   const configDir = join(homedir(), '.aia');
   const keyFile = join(configDir, 'key');
-  const configFile = join(configDir, 'config.enc');
+  // const configFile = join(configDir, 'config.enc');
   
   // Ensure directory exists
   mkdirSync(configDir, { recursive: true });

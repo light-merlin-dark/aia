@@ -5,6 +5,52 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-06-17
+
+### Added
+- **Test Performance Improvements**
+  - Parallel test execution with thread pool (3x speedup: 10.5s → 3.5s)
+  - Fail-fast mode with `BAIL=1` environment variable
+  - New test categorization commands in Makefile:
+    - `make test-unit` - Run unit tests only
+    - `make test-e2e` - Run e2e tests only  
+    - `make test-critical` - Run with fail-fast
+    - `make test-watch` - Run in watch mode
+  - Test optimization plan document at `docs/plan.md`
+
+### Changed
+- Vitest configuration to enable parallel test execution with up to 4 threads
+- Test commands in Makefile to use proper vitest runner
+
+### Fixed
+- MCP server test undefined `serverError` variable
+- Config path inconsistencies from `.ai-advisor` to `.aia`
+- CLI router test assertions for AIA rebranding
+
+## [0.2.0] - 2025-06-16
+
+### Added
+- **Cost Tracking Feature**
+  - Real-time cost calculation for all API calls
+  - Integration with @light-merlin-dark/tok for accurate token estimation
+  - Per-model cost breakdown in response output
+  - Total cost aggregation for multi-model queries
+  - Cost configuration during setup wizard
+  - New CLI commands: `aia services cost set/list/remove`
+  - Support for pricing in $/million tokens format
+  - Cost display formatting (e.g., $0.0125, $0.0001)
+  - Pricing hints when not configured
+
+### Changed
+- Extended config schema to include model pricing information
+- Enhanced wizard to optionally collect pricing during setup
+- Improved response output to display token usage and costs
+- Updated test runner from `bun test` to `vitest` in Makefile
+
+### Fixed
+- Fixed floating-point precision issues in cost calculations
+- Improved test reliability with proper mocking
+
 ## [0.1.0] - 2025-06-15
 
 ### Added

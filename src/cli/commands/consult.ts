@@ -5,6 +5,7 @@ import { buildPrompt } from '../../core/prompt-builder';
 import { getPluginRegistry } from '../../plugins/registry';
 import { getConfig } from '../../config/manager';
 import { FileResolver } from '../../services/file-resolver';
+import { tokenizer } from '../../core/tokenizer';
 import chalk from 'chalk';
 
 const logger = createLogger('ConsultCommand');
@@ -200,9 +201,18 @@ Examples:
         if (result.responses.length === 0) {
           console.log(chalk.red('No responses received.'));
         } else {
-          for (const response of result.responses) {
+          for (let i = 0; i < result.responses.length; i++) {
+            const response = result.responses[i];
             console.log(chalk.blue(`\n=== ${response.model} ===`));
             console.log(response.content);
+            
+            // Display cost if available
+            if (result.costs && result.costs[i]) {
+              const cost = result.costs.find(c => c.model === response.model && c.provider === response.provider);
+              if (cost) {
+                console.log(chalk.gray(`\nCost: ${tokenizer.formatCost(cost.totalCost)} (${cost.inputTokens} in, ${cost.outputTokens} out)`));
+              }
+            }
             
             if (verbose && response.metadata) {
               console.log(chalk.gray(`\nMetadata: ${JSON.stringify(response.metadata, null, 2)}`));
@@ -216,6 +226,32 @@ Examples:
 
         if (result.failed.length > 0) {
           console.log(chalk.yellow(`\nFailed models: ${result.failed.join(', ')}`));
+        }
+
+        // Display total cost if multiple models
+        if (result.totalCost !== undefined && result.totalCost > 0 && result.responses.length > 1) {
+          console.log(chalk.yellow(`\nTotal cost: ${tokenizer.formatCost(result.totalCost)}`));
+        }
+
+        // Show pricing hints for models without pricing
+        const modelsWithoutPricing: Set<string> = new Set();
+        for (const response of result.responses) {
+          if (!response.isError) {
+            const hasPricing = result.costs?.some(c => 
+              c.model === response.model && c.provider === response.provider
+            );
+            if (!hasPricing) {
+              modelsWithoutPricing.add(`${response.provider} ${response.model}`);
+            }
+          }
+        }
+        
+        if (modelsWithoutPricing.size > 0) {
+          const firstModel = modelsWithoutPricing.values().next().value;
+          if (firstModel) {
+            const [provider, model] = firstModel.split(' ');
+            console.log(chalk.gray('\n' + tokenizer.getPricingHint(provider, model)));
+          }
         }
 
         if (verbose) {
