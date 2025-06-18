@@ -7,13 +7,13 @@ import { getConfig } from "./config/manager.js";
 import { PluginRegistry } from "./plugins/registry.js";
 import { orchestrate } from "./core/orchestrator.js";
 
-// Define the consult tool schema
-const consultSchema = z.object({
+// Define the consult tool schema as raw shape for MCP
+const consultSchemaShape = {
   prompt: z.string().min(1).describe("The technical query or task"),
   files: z.array(z.string()).optional().describe("File paths to include as context"),
   models: z.array(z.string()).optional().describe("Specific models to consult (defaults to configured model)"),
   bestOf: z.boolean().optional().describe("Select best response from multiple models")
-});
+};
 
 // Build dynamic tool description based on enabled plugins
 function buildConsultDescription(registry: PluginRegistry): string {
@@ -55,11 +55,9 @@ async function main() {
   server.tool(
     "consult",
     buildConsultDescription(registry),
-    async (args) => {
+    consultSchemaShape,
+    async ({ prompt, files, models, bestOf }) => {
       try {
-        // Validate args with schema
-        const validated = consultSchema.parse(args);
-        const { prompt, files, models, bestOf } = validated;
         
         // Use configured default model if none specified
         const targetModels = models && models.length > 0 
