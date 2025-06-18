@@ -40,7 +40,7 @@ export class CLIRouter {
       if (!handler) {
         return {
           success: false,
-          message: `Unknown command: ${parsed.command}\nRun 'ai-advisor --help' for available commands.`
+          message: `Unknown command: ${parsed.command}\nRun 'aia --help' for available commands.`
         };
       }
 
@@ -166,7 +166,7 @@ export class CLIRouter {
       console.log(command.help);
     } else {
       const lines = [
-        `Usage: ai-advisor ${command.name} [options]`,
+        `Usage: aia ${command.name} [options]`,
         '',
         `Description: ${command.description}`,
       ];

@@ -289,7 +289,7 @@ describe('CLIRouter', () => {
       const result = await router.route(['test', '--help'], mockContext);
       
       expect(result.success).toBe(true);
-      expect(consoleOutput.join('\n')).toContain('Usage: ai-advisor test [options]');
+      expect(consoleOutput.join('\n')).toContain('Usage: aia test [options]');
       expect(consoleOutput.join('\n')).toContain('Test command with options');
       expect(consoleOutput.join('\n')).toContain('input');
       expect(consoleOutput.join('\n')).toContain('(required)');
@@ -327,7 +327,7 @@ describe('CLIRouter', () => {
       
       expect(result.success).toBe(false);
       expect(result.message).toContain('Unknown command: unknown');
-      expect(result.message).toContain("Run 'ai-advisor --help'");
+      expect(result.message).toContain("Run 'aia --help'");
     });
     
     it('should handle command execution errors', async () => {

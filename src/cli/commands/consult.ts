@@ -50,7 +50,7 @@ Examples:
   aia consult "Complex question" -m gpt-4 claude-3 --best-of
 
   # Using stdin
-  echo "What is this?" | ai-advisor consult -f image.png`,
+  echo "What is this?" | aia consult -f image.png`,
 
   arguments: [
     {

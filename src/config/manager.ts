@@ -113,7 +113,31 @@ export class ConfigManager {
   }
   
   private async createConfig(): Promise<AIAdvisorConfig> {
-    this.logger.info('No configuration found. Starting setup wizard...');
+    this.logger.info('No configuration found.');
+    
+    // In MCP mode, create minimal config from environment
+    if (process.env.AIA_MCP_MODE === 'true') {
+      this.logger.info('Running in MCP mode - using environment configuration');
+      
+      // Load initial values from .env if available
+      const envConfig = this.loadEnvFile();
+      
+      // Create minimal config
+      const config: AIAdvisorConfig = {
+        services: envConfig.services || {}
+      };
+      
+      // Only save if we have at least one service configured
+      if (Object.keys(config.services).length > 0) {
+        this.config = config;
+        await this.saveConfig();
+      }
+      
+      return config;
+    }
+    
+    // Normal mode - run wizard
+    this.logger.info('Starting setup wizard...');
     
     // Load initial values from .env if available
     const envConfig = this.loadEnvFile();

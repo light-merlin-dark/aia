@@ -19,7 +19,7 @@ export class PluginLoader {
     // Default paths: built-in plugins and user plugins
     this.pluginPaths = pluginPaths || [
       path.join(process.cwd(), 'plugins'),
-      path.join(process.env.HOME || '', '.ai-advisor', 'plugins')
+      path.join(process.env.HOME || '', '.aia', 'plugins')
     ];
   }
 

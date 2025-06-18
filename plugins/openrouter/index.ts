@@ -115,7 +115,7 @@ class OpenRouterPlugin implements AIProviderPlugin {
       const headers: Record<string, string> = {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': this.config.siteUrl || 'https://github.com/ai-advisor/ai-advisor',
+        'HTTP-Referer': this.config.siteUrl || 'https://github.com/light-merlin-dark/aia',
         'X-Title': this.config.siteName || 'AI Advisor',
       };
 
