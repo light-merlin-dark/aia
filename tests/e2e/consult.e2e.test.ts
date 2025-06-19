@@ -31,7 +31,7 @@ describe('AI Advisor E2E Tests', () => {
     
     // Encrypt and save the config
     const encrypted = await encrypt(JSON.stringify(config, null, 2), keyFile);
-    writeFileSync(join(configDir, 'config.json'), encrypted);
+    writeFileSync(join(configDir, 'config.enc'), encrypted);
     
     // Initialize registry with real plugins
     registry = getPluginRegistry();

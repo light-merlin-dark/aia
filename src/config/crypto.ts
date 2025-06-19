@@ -21,6 +21,16 @@ function getOrCreateKey(keyPath: string): Buffer {
     return readFileSync(keyPath);
   }
   
+  // Check if config exists without key (config persistence issue)
+  const configPath = keyPath.replace(/key$/, 'config.enc');
+  if (existsSync(configPath)) {
+    throw new Error(
+      'Configuration exists but encryption key is missing. ' +
+      'This can happen after reinstalling the package. ' +
+      'To recover: 1) Back up your API keys, 2) Run "aia reset", 3) Reconfigure services.'
+    );
+  }
+  
   // Generate a new key
   const key = randomBytes(KEY_LENGTH);
   writeFileSync(keyPath, key, { mode: 0o600 }); // Restrictive permissions

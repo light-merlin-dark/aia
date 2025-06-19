@@ -44,8 +44,8 @@ export class ConfigManager {
   private readonly CONFIG_FILE = join(this.CONFIG_DIR, 'config.enc');
   private readonly KEY_FILE = join(this.CONFIG_DIR, 'key');
   
-  // Absolute path to project .env file as requested
-  private readonly ENV_FILE = '/Users/merlin/_dev/ai-advisor/.env';
+  // Path to project .env file
+  private readonly ENV_FILE = process.env.AIA_ENV_FILE || join(process.cwd(), '.env');
   
   private constructor() {}
   

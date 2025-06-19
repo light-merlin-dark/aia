@@ -25,7 +25,7 @@ describe('ConfigManager', () => {
   const mockConfigDir = '/home/user/.aia';
   const mockConfigFile = '/home/user/.aia/config.enc';
   const mockKeyFile = '/home/user/.aia/key';
-  const mockEnvFile = '/Users/merlin/_dev/aia/.env';
+  const mockEnvFile = '/test/.env';
   
   const mockConfig: AIAdvisorConfig = {
     services: {
@@ -41,6 +41,9 @@ describe('ConfigManager', () => {
     vi.clearAllMocks();
     vi.mocked(os.homedir).mockReturnValue(mockHomeDir);
     
+    // Set test env file path
+    process.env.AIA_ENV_FILE = mockEnvFile;
+    
     // Reset process.env
     delete process.env.OPENAI_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
@@ -50,6 +53,8 @@ describe('ConfigManager', () => {
   afterEach(() => {
     // Clean up singleton
     (ConfigManager as any).instance = undefined;
+    // Clean up env variable
+    delete process.env.AIA_ENV_FILE;
   });
   
   describe('getInstance', () => {

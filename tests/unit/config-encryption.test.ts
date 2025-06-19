@@ -171,7 +171,10 @@ describe('Config Encryption/Decryption', () => {
         
         // Basic validation
         expect(config).toHaveProperty('services');
-        expect(config).toHaveProperty('defaultModel');
+        // defaultModel is optional
+        if (config.defaultModel) {
+          expect(typeof config.defaultModel).toBe('string');
+        }
       } catch (error) {
         console.error('Error testing user config:', error);
         throw error;

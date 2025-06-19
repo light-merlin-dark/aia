@@ -44,8 +44,44 @@ const consultSchemaShape = {
   output: z.string().optional().describe("File path where the JSON response will be saved. Supports both relative and absolute paths. Directories are created automatically if they don't exist.")
 };
 
+// Helper to get example models based on user configuration
+function getExampleModels(config: any, count: number): string[] {
+  const models: string[] = [];
+  
+  // First, add default models if configured
+  if (config.defaultModels && config.defaultModels.length > 0) {
+    models.push(...config.defaultModels.slice(0, count));
+  } else if (config.defaultModel) {
+    models.push(config.defaultModel);
+  }
+  
+  // Fill with available models from configured services
+  for (const serviceConfig of Object.values(config.services)) {
+    if (serviceConfig && (serviceConfig as any).models) {
+      for (const model of (serviceConfig as any).models) {
+        if (!models.includes(model) && models.length < count) {
+          models.push(model);
+        }
+      }
+    }
+  }
+  
+  // If still not enough, add some reasonable defaults based on configured services
+  if (models.length < count && config.services.openai) {
+    models.push('gpt-4-turbo');
+  }
+  if (models.length < count && config.services.anthropic) {
+    models.push('claude-3-opus-20240229');
+  }
+  if (models.length < count && config.services.openrouter) {
+    models.push('google/gemini-pro');
+  }
+  
+  return models.slice(0, count);
+}
+
 // Build dynamic tool description based on enabled plugins
-function buildConsultDescription(registry: PluginRegistry): string {
+function buildConsultDescription(registry: PluginRegistry, config: any): string {
   let description = `Consult multiple AI models in parallel for technical advice, code reviews, architectural decisions, and problem-solving. Features automatic retry/failover, cost tracking, and parallel execution.
 
 PARAMETERS:
@@ -58,10 +94,10 @@ PARAMETERS:
 REAL-WORLD EXAMPLES:
 
 1. Code Review:
-{"prompt": "Review this code for security vulnerabilities and performance issues", "files": ["src/**/*.ts"], "models": ["gpt-4-turbo", "claude-3-opus"]}
+{"prompt": "Review this code for security vulnerabilities and performance issues", "files": ["src/**/*.ts"], "models": ${JSON.stringify(getExampleModels(config, 2))}}
 
 2. Architecture Decision:
-{"prompt": "Design a scalable microservices architecture for an e-commerce platform with 1M daily users", "models": ["gpt-4-turbo", "claude-3-opus", "openai/o1-preview"], "bestOf": true}
+{"prompt": "Design a scalable microservices architecture for an e-commerce platform with 1M daily users", "models": ${JSON.stringify(getExampleModels(config, 3))}, "bestOf": true}
 
 3. Debugging Help:
 {"prompt": "This function is throwing 'undefined is not a function'. Help me fix it", "files": ["src/utils/parser.js", "tests/parser.test.js"]}
@@ -70,7 +106,7 @@ REAL-WORLD EXAMPLES:
 {"prompt": "Generate comprehensive API documentation for these endpoints", "files": ["src/api/**/*.ts"], "output": "docs/api-reference.md"}
 
 5. Code Refactoring:
-{"prompt": "Refactor this legacy code to use modern React patterns and TypeScript", "files": ["components/UserDashboard.jsx"], "models": ["gpt-4-turbo"], "output": "refactored/UserDashboard.tsx"}
+{"prompt": "Refactor this legacy code to use modern React patterns and TypeScript", "files": ["components/UserDashboard.jsx"], "models": ${JSON.stringify(getExampleModels(config, 1))}, "output": "refactored/UserDashboard.tsx"}
 
 6. Test Generation:
 {"prompt": "Write comprehensive unit tests with edge cases", "files": ["src/services/auth.ts"], "output": "tests/auth.test.ts"}
@@ -79,7 +115,7 @@ RESPONSE STRUCTURE:
 {
   "responses": [
     {
-      "model": "gpt-4-turbo",
+      "model": "${getExampleModels(config, 1)[0] || 'your-model'}",
       "content": "AI response here...",
       "provider": "openai",
       "timestamp": "2024-01-01T00:00:00.000Z",
@@ -95,7 +131,7 @@ RESPONSE STRUCTURE:
   "bestIndex": 0,  // If bestOf=true, index of best response
   "costs": [
     {
-      "model": "gpt-4-turbo",
+      "model": "${getExampleModels(config, 1)[0] || 'your-model'}",
       "promptCost": 0.0015,
       "completionCost": 0.015,
       "totalCost": 0.0165
@@ -161,7 +197,7 @@ async function main() {
     logToFile('INFO', 'Registering consult tool...');
     server.tool(
     "consult",
-    buildConsultDescription(registry),
+    buildConsultDescription(registry, config),
     consultSchemaShape,
     async ({ prompt, files, models, bestOf, output }) => {
       try {
@@ -171,7 +207,7 @@ async function main() {
         // Use configured default model if none specified
         const targetModels = models && models.length > 0 
           ? models 
-          : [config.defaultModel || 'gpt-4-turbo'];
+          : config.defaultModels || (config.defaultModel ? [config.defaultModel] : []);
 
         // Orchestrate the consultation
         const result = await orchestrate({

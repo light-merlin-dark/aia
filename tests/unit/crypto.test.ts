@@ -58,6 +58,19 @@ describe('crypto module', () => {
       );
     });
     
+    it('should throw error if config exists but key is missing', async () => {
+      const mockConfigPath = '/test/config.enc';
+      
+      vi.mocked(fs.existsSync).mockImplementation((path) => {
+        if (path === mockKeyPath) return false;
+        if (path === mockConfigPath) return true;
+        return false;
+      });
+      
+      await expect(encrypt(testData, mockKeyPath))
+        .rejects.toThrow('Configuration exists but encryption key is missing');
+    });
+    
     it('should use existing key if available', async () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readFileSync).mockReturnValue(mockKey);
