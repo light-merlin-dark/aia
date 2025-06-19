@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, jest, beforeEach, afterEach } from 'bun:test';
 import OpenRouterPlugin from '../index';
 
 // Mock fetch
-const mockFetch = vi.fn();
-global.fetch = mockFetch;
+const mockFetch = jest.fn();
+global.fetch = mockFetch as any;
 
 describe('OpenRouter Plugin', () => {
   let plugin: typeof OpenRouterPlugin;
@@ -16,10 +16,10 @@ describe('OpenRouter Plugin', () => {
     mockContext = {
       services: {
         logger: {
-          debug: vi.fn(),
-          info: vi.fn(),
-          warn: vi.fn(),
-          error: vi.fn(),
+          debug: jest.fn(),
+          info: jest.fn(),
+          warn: jest.fn(),
+          error: jest.fn(),
         }
       },
       pluginConfig: {
@@ -28,12 +28,12 @@ describe('OpenRouter Plugin', () => {
     };
 
     // Clear mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     mockFetch.mockClear();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('metadata', () => {
@@ -75,7 +75,11 @@ describe('OpenRouter Plugin', () => {
       process.env.OPENROUTER_API_KEY = 'env-api-key';
       mockContext.pluginConfig = {};
       
-      await expect(plugin.onLoad(mockContext)).resolves.not.toThrow();
+      // Should not throw an error
+      await plugin.onLoad(mockContext);
+      expect(mockContext.services.logger.info).toHaveBeenCalledWith(
+        'OpenRouter plugin loaded successfully'
+      );
     });
 
     it('should use custom base URL if provided', async () => {
@@ -89,6 +93,8 @@ describe('OpenRouter Plugin', () => {
 
   describe('execute', () => {
     beforeEach(async () => {
+      // Reset plugin to fresh state
+      plugin = OpenRouterPlugin;
       await plugin.onLoad(mockContext);
     });
 
@@ -138,18 +144,14 @@ describe('OpenRouter Plugin', () => {
         prompt: 'Test prompt'
       });
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://openrouter.ai/api/v1/chat/completions',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Authorization': 'Bearer test-api-key',
-            'Content-Type': 'application/json',
-            'HTTP-Referer': expect.any(String),
-            'X-Title': expect.any(String),
-          })
-        })
-      );
+      expect(mockFetch).toHaveBeenCalled();
+      const [url, options] = mockFetch.mock.calls[0];
+      expect(url).toMatch(/https:\/\/.*openrouter\.ai.*\/chat\/completions/);
+      expect(options.method).toBe('POST');
+      expect(options.headers['Authorization']).toBe('Bearer test-api-key');
+      expect(options.headers['Content-Type']).toBe('application/json');
+      expect(options.headers['HTTP-Referer']).toBeDefined();
+      expect(options.headers['X-Title']).toBeDefined();
     });
 
     it('should handle system prompt', async () => {

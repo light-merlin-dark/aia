@@ -3,7 +3,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { getConfig } from "./config/manager.js";
+import { getConfig, ConfigManager } from "./config/manager.js";
 import { PluginRegistry } from "./plugins/registry.js";
 import { orchestrate } from "./core/orchestrator.js";
 import { createLogger } from "./services/logger.js";
@@ -287,6 +287,199 @@ async function main() {
       }
     }
   );
+
+    // Register configuration management tools
+    const configManager = ConfigManager.getInstance();
+    
+    // config-list tool
+    server.tool(
+      "config-list",
+      "List all AI Advisor configuration including services, API keys, models, and defaults",
+      {}, // No parameters needed
+      async () => {
+        try {
+          const config = await configManager.listConfig();
+          // Mask API keys for security
+          const maskedConfig = JSON.parse(JSON.stringify(config));
+          for (const service in maskedConfig.services) {
+            if (maskedConfig.services[service].apiKey) {
+              maskedConfig.services[service].apiKey = '***' + maskedConfig.services[service].apiKey.slice(-4);
+            }
+          }
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify(maskedConfig, null, 2)
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error listing config: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-get tool
+    server.tool(
+      "config-get",
+      "Get configuration for a specific service or a specific key within a service",
+      {
+        service: z.string().describe("The service name (e.g., 'openai', 'anthropic', 'openrouter')"),
+        key: z.string().optional().describe("Optional specific key to retrieve (e.g., 'apiKey', 'models', 'endpoint')")
+      },
+      async ({ service, key }) => {
+        try {
+          const result = await configManager.getServiceConfig(service, key);
+          // Mask API key if that's what we're returning
+          if (key === 'apiKey' || (!key && result.apiKey)) {
+            if (typeof result === 'string') {
+              return {
+                content: [{
+                  type: "text" as const,
+                  text: '***' + result.slice(-4)
+                }]
+              };
+            } else {
+              result.apiKey = '***' + result.apiKey.slice(-4);
+            }
+          }
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify(result, null, 2)
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error getting config: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-set tool
+    server.tool(
+      "config-set",
+      "Set a configuration value for a service. Creates the service if it doesn't exist.",
+      {
+        service: z.string().describe("The service name (e.g., 'openai', 'anthropic', 'openrouter')"),
+        key: z.string().describe("The configuration key to set (e.g., 'apiKey', 'endpoint', 'models')"),
+        value: z.string().describe("The value to set. For models, use comma-separated list. For pricing, use JSON.")
+      },
+      async ({ service, key, value }) => {
+        try {
+          await configManager.setServiceConfig(service, key, value);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully set ${key} for service ${service}`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error setting config: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-add-model tool
+    server.tool(
+      "config-add-model",
+      "Add a model to a service's available models list",
+      {
+        service: z.string().describe("The service name (e.g., 'openai', 'anthropic', 'openrouter')"),
+        model: z.string().describe("The model name to add (e.g., 'gpt-4', 'claude-3-opus-20240229')")
+      },
+      async ({ service, model }) => {
+        try {
+          await configManager.addModel(service, model);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully added model ${model} to service ${service}`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error adding model: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-set-default tool
+    server.tool(
+      "config-set-default",
+      "Set the default model to use when no specific model is requested",
+      {
+        model: z.string().describe("The model to set as default (e.g., 'gpt-4-turbo', 'anthropic/claude-3-opus-20240229')")
+      },
+      async ({ model }) => {
+        try {
+          await configManager.setDefaultModel(model);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully set default model to ${model}`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error setting default model: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-remove tool
+    server.tool(
+      "config-remove",
+      "Remove a service and all its configuration",
+      {
+        service: z.string().describe("The service name to remove (e.g., 'openai', 'anthropic', 'openrouter')")
+      },
+      async ({ service }) => {
+        try {
+          await configManager.removeService(service);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully removed service ${service}`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error removing service: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
 
     // Register any additional MCP tools from plugins
     logger.info('Registering plugin tools...');

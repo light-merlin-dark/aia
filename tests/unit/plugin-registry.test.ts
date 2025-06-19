@@ -1,45 +1,48 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, jest, mock, beforeEach, afterEach } from 'bun:test';
 import { PluginRegistry, resetPluginRegistry } from '../../src/plugins/registry';
 
 // Mock the loader
-vi.mock('../../src/plugins/loader', () => {
-  const mockLoader = {
-    loadPlugins: vi.fn(),
-    getPlugin: vi.fn(),
-    reloadPlugin: vi.fn(),
-    getAIProviderPlugins: vi.fn()
+let mockLoader: any;
+
+mock.module('../../src/plugins/loader', () => {
+  mockLoader = {
+    loadPlugins: jest.fn(),
+    getPlugin: jest.fn(),
+    reloadPlugin: jest.fn(),
+    getAIProviderPlugins: jest.fn()
   };
   
   return {
-    PluginLoader: vi.fn().mockImplementation(() => mockLoader),
+    PluginLoader: jest.fn().mockImplementation(() => mockLoader),
     __mockLoader: mockLoader
   };
 });
 
 // Mock the logger
-vi.mock('../../src/services/logger', () => ({
-  createLogger: vi.fn(() => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn()
+mock.module('../../src/services/logger', () => ({
+  Logger: jest.fn().mockImplementation(() => ({
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
+  })),
+  createLogger: jest.fn(() => ({
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn()
   }))
 }));
 
 describe('PluginRegistry with new loader', () => {
   let registry: PluginRegistry;
-  let mockLoader: any;
 
   beforeEach(async () => {
     // Reset the registry singleton
     resetPluginRegistry();
     
-    // Get mock loader instance
-    const loaderModule = vi.mocked(await import('../../src/plugins/loader'));
-    mockLoader = (loaderModule as any).__mockLoader;
-    
     // Clear all mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     
     // Create registry instance
     registry = new PluginRegistry();
@@ -102,7 +105,7 @@ describe('PluginRegistry with new loader', () => {
         name: 'openai',
         version: '1.0.0',
         description: 'OpenAI plugin',
-        onLoad: vi.fn()
+        onLoad: jest.fn()
       };
 
       mockLoader.loadPlugins.mockResolvedValueOnce([
@@ -149,7 +152,7 @@ describe('PluginRegistry with new loader', () => {
         name: 'test-plugin',
         version: '1.0.0',
         description: 'Test plugin',
-        onUnload: vi.fn()
+        onUnload: jest.fn()
       };
 
       const updatedPlugin = {
@@ -204,13 +207,17 @@ describe('PluginRegistry with new loader', () => {
       const mockProviders = [
         { 
           name: 'openai',
-          execute: vi.fn(),
-          listModels: vi.fn()
+          version: '1.0.0',
+          description: 'OpenAI provider',
+          execute: jest.fn(),
+          listModels: jest.fn()
         },
         {
           name: 'anthropic',
-          execute: vi.fn(),
-          listModels: vi.fn()
+          version: '1.0.0',
+          description: 'Anthropic provider',
+          execute: jest.fn(),
+          listModels: jest.fn()
         }
       ];
 
@@ -229,7 +236,7 @@ describe('PluginRegistry with new loader', () => {
         name: 'openai',
         version: '1.0.0',
         description: 'OpenAI plugin',
-        onLoad: vi.fn()
+        onLoad: jest.fn()
       };
 
       mockLoader.loadPlugins.mockResolvedValueOnce([
@@ -256,7 +263,7 @@ describe('PluginRegistry with new loader', () => {
         name: 'custom-plugin',
         version: '1.0.0',
         description: 'Custom plugin',
-        onLoad: vi.fn()
+        onLoad: jest.fn()
       };
 
       mockLoader.loadPlugins.mockResolvedValueOnce([

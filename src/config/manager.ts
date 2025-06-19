@@ -213,6 +213,103 @@ export class ConfigManager {
       }
     }
   }
+  
+  // MCP Config Management Methods
+  
+  async listConfig(): Promise<AIAdvisorConfig> {
+    return await this.getConfig();
+  }
+  
+  async getServiceConfig(service: string, key?: string): Promise<any> {
+    const config = await this.getConfig();
+    
+    if (!config.services[service]) {
+      throw new Error(`Service '${service}' not found in configuration`);
+    }
+    
+    const serviceConfig = config.services[service];
+    
+    if (key) {
+      if (!(key in serviceConfig)) {
+        throw new Error(`Key '${key}' not found in service '${service}'`);
+      }
+      return serviceConfig[key as keyof typeof serviceConfig];
+    }
+    
+    return serviceConfig;
+  }
+  
+  async setServiceConfig(service: string, key: string, value: string): Promise<void> {
+    const config = await this.getConfig();
+    
+    if (!config.services[service]) {
+      // Create new service if it doesn't exist
+      config.services[service] = { apiKey: '' };
+    }
+    
+    // Handle special cases for complex fields
+    if (key === 'models' && typeof value === 'string') {
+      // Parse comma-separated models
+      config.services[service].models = value.split(',').map(m => m.trim()).filter(m => m);
+    } else if (key === 'pricing' && typeof value === 'string') {
+      // Parse JSON pricing data
+      try {
+        config.services[service].pricing = JSON.parse(value);
+      } catch (e) {
+        throw new Error(`Invalid pricing JSON: ${value}`);
+      }
+    } else {
+      // Set simple string values
+      (config.services[service] as any)[key] = value;
+    }
+    
+    await this.saveConfig(config);
+  }
+  
+  async addModel(service: string, model: string): Promise<void> {
+    const config = await this.getConfig();
+    
+    if (!config.services[service]) {
+      throw new Error(`Service '${service}' not found in configuration`);
+    }
+    
+    if (!config.services[service].models) {
+      config.services[service].models = [];
+    }
+    
+    if (!config.services[service].models!.includes(model)) {
+      config.services[service].models!.push(model);
+      await this.saveConfig(config);
+    }
+  }
+  
+  async setDefaultModel(model: string): Promise<void> {
+    const config = await this.getConfig();
+    
+    // Set both defaultModel and defaultModels for compatibility
+    config.defaultModel = model;
+    config.defaultModels = [model];
+    
+    await this.saveConfig(config);
+  }
+  
+  async removeService(service: string): Promise<void> {
+    const config = await this.getConfig();
+    
+    if (!config.services[service]) {
+      throw new Error(`Service '${service}' not found in configuration`);
+    }
+    
+    delete config.services[service];
+    
+    // If the default model was from this service, clear it
+    if (config.defaultModel?.startsWith(`${service}/`)) {
+      delete config.defaultModel;
+      delete config.defaultModels;
+    }
+    
+    await this.saveConfig(config);
+  }
 }
 
 // Export singleton instance getter

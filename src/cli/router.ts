@@ -148,8 +148,9 @@ export class CLIRouter {
 
     lines.push('', "Run 'aia <command> --help' for command-specific help.");
 
-    console.log(lines.join('\n'));
-    return { success: true };
+    const helpText = lines.join('\n');
+    console.log(helpText);
+    return { success: true, message: helpText };
   }
 
   private showCommandHelp(commandName: string): CommandResult {
@@ -162,7 +163,10 @@ export class CLIRouter {
       };
     }
 
+    let helpText: string;
+
     if (command.help) {
+      helpText = command.help;
       console.log(command.help);
     } else {
       const lines = [
@@ -189,10 +193,11 @@ export class CLIRouter {
         }
       }
 
-      console.log(lines.join('\n'));
+      helpText = lines.join('\n');
+      console.log(helpText);
     }
 
-    return { success: true };
+    return { success: true, message: helpText };
   }
 }
 

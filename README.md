@@ -380,7 +380,9 @@ make build
 ```bash
 # Common tasks
 make lint        # Lint code
-make test        # Run test suite
+make test        # Run test suite (uses Bun test)
+make test-unit   # Run unit tests only
+make test-e2e    # Run e2e tests only
 make build       # Build TypeScript
 make clean       # Clean artifacts
 

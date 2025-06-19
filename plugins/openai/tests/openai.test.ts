@@ -1,12 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, jest, mock, beforeEach } from 'bun:test';
 import OpenAIPlugin from '../index';
 
 // Mock OpenAI
-vi.mock('openai', () => {
-  const mockCreate = vi.fn();
+let mockCreate: any;
+
+mock.module('openai', () => {
+  mockCreate = jest.fn();
   
   return {
-    default: vi.fn().mockImplementation(() => ({
+    default: jest.fn().mockImplementation(() => ({
       chat: {
         completions: {
           create: mockCreate
@@ -28,10 +30,10 @@ describe('OpenAI Plugin', () => {
     mockContext = {
       services: {
         logger: {
-          debug: vi.fn(),
-          info: vi.fn(),
-          warn: vi.fn(),
-          error: vi.fn(),
+          debug: jest.fn(),
+          info: jest.fn(),
+          warn: jest.fn(),
+          error: jest.fn(),
         }
       },
       pluginConfig: {
@@ -40,7 +42,7 @@ describe('OpenAI Plugin', () => {
     };
 
     // Clear mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('metadata', () => {
@@ -81,7 +83,11 @@ describe('OpenAI Plugin', () => {
       process.env.OPENAI_API_KEY = 'env-api-key';
       mockContext.pluginConfig = {};
       
-      await expect(plugin.onLoad(mockContext)).resolves.not.toThrow();
+      // Should not throw an error
+      await plugin.onLoad(mockContext);
+      expect(mockContext.services.logger.info).toHaveBeenCalledWith(
+        'OpenAI plugin loaded successfully'
+      );
     });
   });
 
@@ -91,8 +97,7 @@ describe('OpenAI Plugin', () => {
     });
 
     it('should execute prompt successfully', async () => {
-      const mockOpenAI = await import('openai');
-      const mockCreate = (mockOpenAI as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       mockCreate.mockResolvedValueOnce({
         choices: [{
@@ -122,8 +127,7 @@ describe('OpenAI Plugin', () => {
     });
 
     it('should handle system prompt', async () => {
-      const mockOpenAI = await import('openai');
-      const mockCreate = (mockOpenAI as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       mockCreate.mockResolvedValueOnce({
         choices: [{
@@ -149,8 +153,7 @@ describe('OpenAI Plugin', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      const mockOpenAI = await import('openai');
-      const mockCreate = (mockOpenAI as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       mockCreate.mockRejectedValueOnce(new Error('API Error'));
 

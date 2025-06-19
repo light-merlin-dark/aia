@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { TokenizerService } from '@/core/tokenizer';
 import { CharDivEstimator, CostCalculator } from '@light-merlin-dark/tok';
 

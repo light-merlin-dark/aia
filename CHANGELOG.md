@@ -5,6 +5,32 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-06-19
+
+### Changed
+- **Test Framework Migration: Vitest → Bun**
+  - Complete migration of all test files from Vitest to Bun test framework
+  - Massive performance improvements:
+    - MCP E2E tests: 16s → 1.4s (91% faster)
+    - Unit tests: ~4s → <100ms per file
+  - Updated test syntax from `vi.mock()` to `mock.module()`
+  - Replaced `vi.spyOn()` with `jest.spyOn()` (from bun:test)
+  - Optimized tests with parallel async operations using Promise.all()
+  - Removed Vitest dependencies (@vitest/coverage-v8, vitest)
+  - Updated Makefile commands:
+    - `make test-unit`: `bun test tests/unit`
+    - `make test-e2e`: `bun test tests/e2e`
+    - `make test-watch`: `bun test --watch`
+
+### Added
+- Async test parallelization for improved performance
+- New .bun.test.ts extension support for pure Bun tests
+- Enhanced test isolation and mock management
+
+### Removed
+- Vitest test framework and all related dependencies
+- vitest.config.ts configuration file
+
 ## [0.2.1] - 2025-06-17
 
 ### Added

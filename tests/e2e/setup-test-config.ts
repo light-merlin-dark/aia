@@ -2,12 +2,13 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { randomBytes } from 'crypto';
+import { encrypt } from '../../src/config/crypto';
 
 // Create a test configuration to bypass the wizard
-export function setupTestConfig() {
+export async function setupTestConfig() {
   const configDir = join(homedir(), '.aia');
   const keyFile = join(configDir, 'key');
-  // const configFile = join(configDir, 'config.enc');
+  const configFile = join(configDir, 'config.enc');
   
   // Ensure directory exists
   mkdirSync(configDir, { recursive: true });
@@ -16,7 +17,7 @@ export function setupTestConfig() {
   const key = randomBytes(32);
   writeFileSync(keyFile, key, { mode: 0o600 });
   
-  // Create a basic config (unencrypted for test setup)
+  // Create a basic config
   const config = {
     services: {
       openai: {
@@ -37,6 +38,9 @@ export function setupTestConfig() {
     timeout: 30000
   };
   
-  // For testing, we'll import the crypto module to encrypt properly
+  // Encrypt and save the config
+  const encrypted = await encrypt(JSON.stringify(config), keyFile);
+  writeFileSync(configFile, encrypted, { mode: 0o600 });
+  
   return { configDir, keyFile, config };
 }

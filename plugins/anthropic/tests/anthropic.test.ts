@@ -1,12 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, jest, mock, beforeEach } from 'bun:test';
 import AnthropicPlugin from '../index';
 
 // Mock Anthropic SDK
-vi.mock('@anthropic-ai/sdk', () => {
-  const mockCreate = vi.fn();
+let mockCreate: any;
+
+mock.module('@anthropic-ai/sdk', () => {
+  mockCreate = jest.fn();
   
   return {
-    default: vi.fn().mockImplementation(() => ({
+    default: jest.fn().mockImplementation(() => ({
       messages: {
         create: mockCreate
       }
@@ -26,10 +28,10 @@ describe('Anthropic Plugin', () => {
     mockContext = {
       services: {
         logger: {
-          debug: vi.fn(),
-          info: vi.fn(),
-          warn: vi.fn(),
-          error: vi.fn(),
+          debug: jest.fn(),
+          info: jest.fn(),
+          warn: jest.fn(),
+          error: jest.fn(),
         }
       },
       pluginConfig: {
@@ -38,7 +40,7 @@ describe('Anthropic Plugin', () => {
     };
 
     // Clear mocks
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('metadata', () => {
@@ -80,7 +82,11 @@ describe('Anthropic Plugin', () => {
       process.env.ANTHROPIC_API_KEY = 'env-api-key';
       mockContext.pluginConfig = {};
       
-      await expect(plugin.onLoad(mockContext)).resolves.not.toThrow();
+      // Should not throw an error
+      await plugin.onLoad(mockContext);
+      expect(mockContext.services.logger.info).toHaveBeenCalledWith(
+        'Anthropic plugin loaded successfully'
+      );
     });
   });
 
@@ -90,8 +96,7 @@ describe('Anthropic Plugin', () => {
     });
 
     it('should execute prompt successfully', async () => {
-      const mockAnthropic = await import('@anthropic-ai/sdk');
-      const mockCreate = (mockAnthropic as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       mockCreate.mockResolvedValueOnce({
         id: 'msg_123',
@@ -123,8 +128,7 @@ describe('Anthropic Plugin', () => {
     });
 
     it('should handle system prompt', async () => {
-      const mockAnthropic = await import('@anthropic-ai/sdk');
-      const mockCreate = (mockAnthropic as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'Test response' }],
@@ -146,8 +150,7 @@ describe('Anthropic Plugin', () => {
     });
 
     it('should handle API errors gracefully', async () => {
-      const mockAnthropic = await import('@anthropic-ai/sdk');
-      const mockCreate = (mockAnthropic as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       const error = new Error('API Error');
       (error as any).status = 429;
@@ -167,8 +170,7 @@ describe('Anthropic Plugin', () => {
     });
 
     it('should use default max tokens if not specified', async () => {
-      const mockAnthropic = await import('@anthropic-ai/sdk');
-      const mockCreate = (mockAnthropic as any).__mockCreate;
+      // Use the mockCreate from module scope
       
       mockCreate.mockResolvedValueOnce({
         content: [{ type: 'text', text: 'Test' }],
