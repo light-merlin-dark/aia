@@ -7,8 +7,9 @@ import { getConfig } from "./config/manager.js";
 import { PluginRegistry } from "./plugins/registry.js";
 import { orchestrate } from "./core/orchestrator.js";
 import { createLogger } from "./services/logger.js";
-import { mkdirSync, appendFileSync } from "fs";
-import { join } from "path";
+import { FileResolver } from "./services/file-resolver.js";
+import { mkdirSync, appendFileSync, writeFileSync } from "fs";
+import { join, dirname, resolve, isAbsolute } from "path";
 import { homedir } from "os";
 
 // Initialize logger and file logging
@@ -36,20 +37,79 @@ function logToFile(level: string, message: string, ...args: any[]) {
 
 // Define the consult tool schema as raw shape for MCP
 const consultSchemaShape = {
-  prompt: z.string().min(1).describe("The technical query or task"),
-  files: z.array(z.string()).optional().describe("File paths to include as context"),
-  models: z.array(z.string()).optional().describe("Specific models to consult (defaults to configured model)"),
-  bestOf: z.boolean().optional().describe("Select best response from multiple models")
+  prompt: z.string().min(1).describe("The technical query or task. Be specific and detailed for best results. Can include code snippets, error messages, requirements, etc."),
+  files: z.array(z.string()).optional().describe("Array of file paths to include as context. Supports wildcards (e.g., 'src/**/*.ts'). Files are read and included in the prompt to provide context."),
+  models: z.array(z.string()).optional().describe("Array of AI models to consult. Use provider prefix for non-default providers (e.g., 'openai/gpt-4-turbo', 'anthropic/claude-3-opus'). If not specified, uses the default configured model."),
+  bestOf: z.boolean().optional().describe("When true, evaluates all model responses and returns only the best one. Useful for critical decisions or when quality matters more than seeing all perspectives."),
+  output: z.string().optional().describe("File path where the JSON response will be saved. Supports both relative and absolute paths. Directories are created automatically if they don't exist.")
 };
 
 // Build dynamic tool description based on enabled plugins
 function buildConsultDescription(registry: PluginRegistry): string {
-  let description = `Consult AI models for technical advice. Examples:
+  let description = `Consult multiple AI models in parallel for technical advice, code reviews, architectural decisions, and problem-solving. Features automatic retry/failover, cost tracking, and parallel execution.
 
-BASIC USAGE:
-• Single model: {"prompt": "Explain async/await"}
-• Multiple models: {"prompt": "Design a REST API", "models": ["gpt-4-turbo", "claude-3-opus"]}
-• With files: {"prompt": "Refactor this code", "files": ["src/index.ts"]}`;
+PARAMETERS:
+• prompt (required): Your technical question or task
+• files (optional): Array of file paths to include as context (supports wildcards)
+• models (optional): Array of specific models to consult (defaults to configured model)
+• bestOf (optional): If true, returns only the best response from multiple models
+• output (optional): File path to save the response (creates directories as needed)
+
+REAL-WORLD EXAMPLES:
+
+1. Code Review:
+{"prompt": "Review this code for security vulnerabilities and performance issues", "files": ["src/**/*.ts"], "models": ["gpt-4-turbo", "claude-3-opus"]}
+
+2. Architecture Decision:
+{"prompt": "Design a scalable microservices architecture for an e-commerce platform with 1M daily users", "models": ["gpt-4-turbo", "claude-3-opus", "openai/o1-preview"], "bestOf": true}
+
+3. Debugging Help:
+{"prompt": "This function is throwing 'undefined is not a function'. Help me fix it", "files": ["src/utils/parser.js", "tests/parser.test.js"]}
+
+4. Documentation Generation:
+{"prompt": "Generate comprehensive API documentation for these endpoints", "files": ["src/api/**/*.ts"], "output": "docs/api-reference.md"}
+
+5. Code Refactoring:
+{"prompt": "Refactor this legacy code to use modern React patterns and TypeScript", "files": ["components/UserDashboard.jsx"], "models": ["gpt-4-turbo"], "output": "refactored/UserDashboard.tsx"}
+
+6. Test Generation:
+{"prompt": "Write comprehensive unit tests with edge cases", "files": ["src/services/auth.ts"], "output": "tests/auth.test.ts"}
+
+RESPONSE STRUCTURE:
+{
+  "responses": [
+    {
+      "model": "gpt-4-turbo",
+      "content": "AI response here...",
+      "provider": "openai",
+      "timestamp": "2024-01-01T00:00:00.000Z",
+      "usage": {
+        "prompt_tokens": 150,
+        "completion_tokens": 500,
+        "total_tokens": 650
+      }
+    }
+  ],
+  "failed": [],  // List of models that failed
+  "durationMs": 1234,
+  "bestIndex": 0,  // If bestOf=true, index of best response
+  "costs": [
+    {
+      "model": "gpt-4-turbo",
+      "promptCost": 0.0015,
+      "completionCost": 0.015,
+      "totalCost": 0.0165
+    }
+  ],
+  "totalCost": 0.0165
+}
+
+TIPS:
+• Use specific, detailed prompts for better results
+• Include relevant files for context-aware responses
+• Use multiple models for important decisions
+• Save responses to files for documentation/audit trail
+• Models automatically retry on failure (up to 3 attempts)`;
 
   const enabledPlugins = registry.getEnabledPlugins();
   if (enabledPlugins.length > 0) {
@@ -103,10 +163,10 @@ async function main() {
     "consult",
     buildConsultDescription(registry),
     consultSchemaShape,
-    async ({ prompt, files, models, bestOf }) => {
+    async ({ prompt, files, models, bestOf, output }) => {
       try {
-        logger.debug('Consult tool invoked with:', { prompt, files, models, bestOf });
-        logToFile('DEBUG', 'Consult tool invoked with:', { prompt, files, models, bestOf });
+        logger.debug('Consult tool invoked with:', { prompt, files, models, bestOf, output });
+        logToFile('DEBUG', 'Consult tool invoked with:', { prompt, files, models, bestOf, output });
         
         // Use configured default model if none specified
         const targetModels = models && models.length > 0 
@@ -131,6 +191,45 @@ async function main() {
               text: `Error: ${result.error}`
             }]
           };
+        }
+
+        // Write to output file if specified
+        if (output) {
+          try {
+            // Resolve output path relative to working directory
+            const workingDir = FileResolver.detectWorkingDirectory();
+            const resolvedOutput = isAbsolute(output) ? output : resolve(workingDir, output);
+            
+            // Ensure directory exists
+            const outputDir = dirname(resolvedOutput);
+            mkdirSync(outputDir, { recursive: true });
+            
+            // Write the formatted result
+            const formattedResult = JSON.stringify(result, null, 2);
+            writeFileSync(resolvedOutput, formattedResult, 'utf-8');
+            
+            logger.info(`Response written to: ${resolvedOutput}`);
+            logToFile('INFO', `Response written to: ${resolvedOutput}`);
+            
+            // Return success with file path
+            return {
+              content: [{
+                type: "text" as const,
+                text: `Response written to: ${resolvedOutput}\n\n${formattedResult}`
+              }]
+            };
+          } catch (writeError: any) {
+            logger.error('Failed to write output file:', writeError);
+            logToFile('ERROR', 'Failed to write output file:', writeError.message);
+            
+            // Return result but mention write error
+            return {
+              content: [{
+                type: "text" as const,
+                text: `Warning: Failed to write to ${output}: ${writeError.message}\n\n${JSON.stringify(result, null, 2)}`
+              }]
+            };
+          }
         }
 
         return {

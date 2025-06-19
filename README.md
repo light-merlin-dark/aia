@@ -204,15 +204,34 @@ aia reset --force  # Skip confirmation
 
 ### MCP Usage
 
-```typescript
-// In Claude or other MCP-enabled tools
-await mcp.call('consult', {
-  prompt: "Optimize this database query",
-  files: ["queries/slow_query.sql"],
-  models: ["gpt-4", "claude-3-opus"],
-  bestOf: false
-});
+The AI Advisor MCP server exposes the `consult` tool for AI agents to query multiple models in parallel.
+
+**Quick Example:**
+```json
+{
+  "prompt": "Review this code for security issues",
+  "files": ["src/auth.ts"],
+  "models": ["gpt-4-turbo", "claude-3-opus"],
+  "output": "security-review.json"
+}
 ```
+
+**Key Features:**
+- Query multiple AI models in parallel
+- Automatic retry and failover
+- File context support with wildcards
+- Cost tracking for all queries
+- Save responses to files
+- Best response selection
+
+**Common Use Cases:**
+- Code reviews and security audits
+- Architecture decisions
+- Debugging assistance
+- Test generation
+- Documentation creation
+
+For comprehensive usage examples and best practices, see the [MCP Usage Guide](docs/mcp-usage-guide.md).
 
 ## 🧩 Plugin System
 

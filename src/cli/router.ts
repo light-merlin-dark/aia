@@ -134,7 +134,7 @@ export class CLIRouter {
 
   private showGeneralHelp(): CommandResult {
     const lines = [
-      'AIA - Parallel AI model consultation',
+      'AIA - MCP-first advanced AI consultation',
       '',
       'Usage: aia <command> [options]',
       '',
