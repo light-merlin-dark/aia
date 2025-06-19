@@ -205,9 +205,24 @@ async function main() {
         logToFile('DEBUG', 'Consult tool invoked with:', { prompt, files, models, bestOf, output });
         
         // Use configured default model if none specified
-        const targetModels = models && models.length > 0 
-          ? models 
-          : config.defaultModels || (config.defaultModel ? [config.defaultModel] : []);
+        let targetModels = models && models.length > 0 ? models : [];
+        
+        // If no models specified, use models from default service
+        if (targetModels.length === 0) {
+          // Check if we have a default service configured
+          const defaultService = config.services?.default?.service;
+          if (defaultService && config.services[defaultService]?.models) {
+            targetModels = config.services[defaultService].models;
+            logger.debug(`Using models from default service '${defaultService}':`, targetModels);
+          } else {
+            // Fall back to legacy defaultModels/defaultModel
+            targetModels = config.defaultModels || (config.defaultModel ? [config.defaultModel] : []);
+          }
+          
+          if (targetModels.length === 0) {
+            throw new Error('No models specified and no default models configured');
+          }
+        }
 
         // Orchestrate the consultation
         const result = await orchestrate({
@@ -475,6 +490,159 @@ async function main() {
             content: [{
               type: "text" as const,
               text: `Error removing service: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-clear-default tool
+    server.tool(
+      "config-clear-default",
+      "Clear the global default model configuration",
+      {},
+      async () => {
+        try {
+          await configManager.clearDefaultModel();
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully cleared default model configuration`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error clearing default model: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-backup tool
+    server.tool(
+      "config-backup",
+      "Backup the current configuration with an optional name",
+      {
+        name: z.string().optional().describe("Optional backup name (defaults to 'default')")
+      },
+      async ({ name }) => {
+        try {
+          const backupName = await configManager.backupConfig(name);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully backed up configuration as '${backupName}'`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error backing up configuration: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-restore tool
+    server.tool(
+      "config-restore",
+      "Restore configuration from a backup",
+      {
+        name: z.string().optional().describe("Backup name to restore (defaults to 'default')")
+      },
+      async ({ name }) => {
+        try {
+          await configManager.restoreConfig(name);
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully restored configuration from '${name || 'default'}' backup`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error restoring configuration: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-list-backups tool
+    server.tool(
+      "config-list-backups",
+      "List all available configuration backups",
+      {},
+      async () => {
+        try {
+          const backups = await configManager.listBackups();
+          if (backups.length === 0) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: "No configuration backups found"
+              }]
+            };
+          }
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Available backups:\n${backups.map(b => `- ${b}`).join('\n')}`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error listing backups: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-clear tool
+    server.tool(
+      "config-clear",
+      "Clear all configuration (removes all services and settings)",
+      {
+        confirm: z.boolean().optional().describe("Confirm clearing all configuration (defaults to false)")
+      },
+      async ({ confirm }) => {
+        try {
+          if (!confirm) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: "Configuration clear cancelled. Set confirm=true to proceed with clearing all configuration."
+              }]
+            };
+          }
+          
+          await configManager.clearConfig();
+          return {
+            content: [{
+              type: "text" as const,
+              text: "Successfully cleared all configuration. You will need to run the setup wizard again."
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error clearing configuration: ${error.message}`
             }]
           };
         }

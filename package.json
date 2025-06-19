@@ -1,6 +1,6 @@
 {
   "name": "@light-merlin-dark/aia",
-  "version": "0.7.10",
+  "version": "0.7.11",
   "description": "AIA - Parallel AI model consultation CLI and MCP server",
   "keywords": [
     "ai",

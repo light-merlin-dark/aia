@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import { encrypt, decrypt } from './crypto';
@@ -10,16 +10,21 @@ export interface ModelPricing {
   outputCostPerMillion: number;  // dollars per million output tokens
 }
 
+export interface ServiceConfig {
+  apiKey: string;
+  models?: string[];
+  endpoint?: string;
+  pricing?: {
+    [model: string]: ModelPricing;
+  };
+  // For default service config
+  service?: string;
+  defaultModel?: string;
+}
+
 export interface AIAdvisorConfig {
   services: {
-    [provider: string]: {
-      apiKey: string;
-      models?: string[];
-      endpoint?: string;
-      pricing?: {
-        [model: string]: ModelPricing;
-      };
-    };
+    [provider: string]: ServiceConfig;
   };
   defaultModel?: string;
   defaultModels?: string[];
@@ -40,12 +45,15 @@ export class ConfigManager {
   private logger = new Logger('ConfigManager');
   
   // Configuration paths
-  private readonly CONFIG_DIR = join(homedir(), '.aia');
-  private readonly CONFIG_FILE = join(this.CONFIG_DIR, 'config.enc');
-  private readonly KEY_FILE = join(this.CONFIG_DIR, 'key');
+  public CONFIG_DIR = join(homedir(), '.aia');
+  public CONFIG_FILE = join(this.CONFIG_DIR, 'config.enc');
+  public KEY_FILE = join(this.CONFIG_DIR, 'key');
   
   // Path to project .env file
   private readonly ENV_FILE = process.env.AIA_ENV_FILE || join(process.cwd(), '.env');
+  
+  // Testing flag
+  public disableEnvMerge = false;
   
   private constructor() {}
   
@@ -54,6 +62,11 @@ export class ConfigManager {
       ConfigManager.instance = new ConfigManager();
     }
     return ConfigManager.instance;
+  }
+  
+  // For testing only
+  static resetInstance(): void {
+    ConfigManager.instance = undefined as any;
   }
   
   async getConfig(): Promise<AIAdvisorConfig> {
@@ -193,7 +206,7 @@ export class ConfigManager {
   }
   
   private mergeEnvVars(): void {
-    if (!this.config) return;
+    if (!this.config || this.disableEnvMerge) return;
     
     // Check for environment variable overrides
     const envOverrides = {
@@ -309,6 +322,76 @@ export class ConfigManager {
     }
     
     await this.saveConfig(config);
+  }
+  
+  async clearDefaultModel(): Promise<void> {
+    const config = await this.getConfig();
+    delete config.defaultModel;
+    delete config.defaultModels;
+    await this.saveConfig(config);
+  }
+  
+  // Backup and Restore Methods
+  
+  async backupConfig(name?: string): Promise<string> {
+    const config = await this.getConfig();
+    const backupName = name || 'default';
+    const backupFile = join(this.CONFIG_DIR, `backup-${backupName}.enc`);
+    
+    // Create encrypted backup
+    const encrypted = await encrypt(JSON.stringify(config, null, 2), this.KEY_FILE);
+    writeFileSync(backupFile, encrypted);
+    
+    this.logger.info(`Configuration backed up to: backup-${backupName}.enc`);
+    return backupName;
+  }
+  
+  async restoreConfig(name?: string): Promise<void> {
+    const backupName = name || 'default';
+    const backupFile = join(this.CONFIG_DIR, `backup-${backupName}.enc`);
+    
+    if (!existsSync(backupFile)) {
+      throw new Error(`Backup '${backupName}' not found`);
+    }
+    
+    // Read and decrypt backup
+    const encryptedData = readFileSync(backupFile, 'utf-8');
+    const decryptedData = await decrypt(encryptedData, this.KEY_FILE);
+    const restoredConfig = JSON.parse(decryptedData);
+    
+    // Save as current config
+    await this.saveConfig(restoredConfig);
+    
+    // Clear cache to force reload
+    this.config = undefined;
+    
+    this.logger.info(`Configuration restored from: backup-${backupName}.enc`);
+  }
+  
+  async listBackups(): Promise<string[]> {
+    const files = readdirSync(this.CONFIG_DIR);
+    const backups = files
+      .filter((file: string) => file.startsWith('backup-') && file.endsWith('.enc'))
+      .map((file: string) => file.replace('backup-', '').replace('.enc', ''));
+    
+    return backups;
+  }
+  
+  async clearConfig(): Promise<void> {
+    // Create a minimal empty config
+    const emptyConfig: AIAdvisorConfig = {
+      services: {},
+      maxRetries: 2,
+      timeout: 60000
+    };
+    
+    // Save empty config
+    await this.saveConfig(emptyConfig);
+    
+    // Clear cache
+    this.config = undefined;
+    
+    this.logger.info('Configuration cleared');
   }
 }
 

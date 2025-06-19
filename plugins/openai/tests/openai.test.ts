@@ -54,11 +54,9 @@ describe('OpenAI Plugin', () => {
   });
 
   describe('listModels', () => {
-    it('should return available models', () => {
+    it('should return empty array by default', () => {
       const models = plugin.listModels();
-      expect(models).toContain('gpt-4-turbo');
-      expect(models).toContain('gpt-4');
-      expect(models).toContain('gpt-3.5-turbo');
+      expect(models).toEqual([]);
     });
   });
 
@@ -189,12 +187,9 @@ describe('OpenAI Plugin', () => {
   });
 
   describe('isModelAvailable', () => {
-    it('should return true for available models', () => {
-      expect(plugin.isModelAvailable('gpt-4')).toBe(true);
-      expect(plugin.isModelAvailable('gpt-3.5-turbo')).toBe(true);
-    });
-
-    it('should return false for unavailable models', () => {
+    it('should return false for any model by default (no models configured)', () => {
+      expect(plugin.isModelAvailable('gpt-4')).toBe(false);
+      expect(plugin.isModelAvailable('gpt-3.5-turbo')).toBe(false);
       expect(plugin.isModelAvailable('gpt-5')).toBe(false);
       expect(plugin.isModelAvailable('invalid-model')).toBe(false);
     });

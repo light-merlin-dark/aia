@@ -31,9 +31,12 @@ export async function setupTestConfig() {
       openrouter: {
         apiKey: process.env.OPENROUTER_API_KEY || 'test-key',
         models: []
+      },
+      default: {
+        apiKey: '',
+        service: 'openai'
       }
     },
-    defaultModel: 'gpt-3.5-turbo',
     maxRetries: 2,
     timeout: 30000
   };

@@ -37,20 +37,7 @@ class OpenRouterPlugin implements AIProviderPlugin {
   private config: OpenRouterPluginConfig = {};
   
   // Popular models available on OpenRouter
-  private models = [
-    'openai/gpt-4-turbo-preview',
-    'openai/gpt-4',
-    'openai/gpt-3.5-turbo',
-    'anthropic/claude-3-opus',
-    'anthropic/claude-3-sonnet',
-    'anthropic/claude-3-haiku',
-    'google/gemini-pro',
-    'google/gemini-pro-vision',
-    'meta-llama/llama-3-70b-instruct',
-    'meta-llama/llama-3-8b-instruct',
-    'mistralai/mixtral-8x7b-instruct',
-    'mistralai/mistral-7b-instruct',
-  ];
+  private models: string[] = [];
   
   mcpContext = {
     section: 'OpenRouter Models',
@@ -65,6 +52,11 @@ class OpenRouterPlugin implements AIProviderPlugin {
   async onLoad(context: PluginContext): Promise<void> {
     this.logger = context.services.logger;
     this.config = context.pluginConfig || {};
+    
+    // Populate models from config (no defaults)
+    if (this.config.models && Array.isArray(this.config.models)) {
+      this.models = this.config.models;
+    }
     
     // Initialize API key
     this.apiKey = this.config.apiKey || process.env.OPENROUTER_API_KEY || '';

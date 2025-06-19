@@ -23,14 +23,7 @@ class AnthropicPlugin implements AIProviderPlugin {
   private logger: Logger | null = null;
   private config: AnthropicPluginConfig = {};
   
-  private models = [
-    'claude-3-opus-20240229',
-    'claude-3-sonnet-20240229',
-    'claude-3-haiku-20240307',
-    'claude-2.1',
-    'claude-2.0',
-    'claude-instant-1.2',
-  ];
+  private models: string[] = [];
   
   mcpContext = {
     section: 'Anthropic Models',
@@ -44,6 +37,11 @@ class AnthropicPlugin implements AIProviderPlugin {
   async onLoad(context: PluginContext): Promise<void> {
     this.logger = context.services.logger;
     this.config = context.pluginConfig || {};
+    
+    // Populate models from config (no defaults)
+    if (this.config.models && Array.isArray(this.config.models)) {
+      this.models = this.config.models;
+    }
     
     // Initialize Anthropic client
     const apiKey = this.config.apiKey || process.env.ANTHROPIC_API_KEY;
@@ -155,14 +153,18 @@ class AnthropicPlugin implements AIProviderPlugin {
       return true;
     }
     
-    // Check for shorthand versions
+    // Check for shorthand versions only if the corresponding full model is available
     const shorthandMap: Record<string, string> = {
       'claude-3-opus': 'claude-3-opus-20240229',
       'claude-3-sonnet': 'claude-3-sonnet-20240229',
       'claude-3-haiku': 'claude-3-haiku-20240307',
     };
     
-    return model in shorthandMap;
+    if (model in shorthandMap) {
+      return this.models.includes(shorthandMap[model]);
+    }
+    
+    return false;
   }
 }
 

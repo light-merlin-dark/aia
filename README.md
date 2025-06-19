@@ -314,23 +314,25 @@ Configuration is stored encrypted in `~/.aia/config.enc`:
 
 ```json
 {
-  "defaultModel": "gpt-4-turbo",
-  "providers": {
+  "services": {
     "openai": {
-      "enabled": true,
+      "apiKey": "sk-...",
       "models": ["gpt-4-turbo", "gpt-3.5-turbo", "o3"]
     },
     "anthropic": {
-      "enabled": true,
-      "models": ["claude-3-opus", "claude-3-sonnet"]
+      "apiKey": "sk-ant-...",
+      "models": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+    },
+    "default": {
+      "service": "openai"  // Default service when no models specified
     }
   },
-  "retry": {
-    "maxAttempts": 2,
-    "timeout": 60000
-  }
+  "maxRetries": 2,
+  "timeout": 60000
 }
 ```
+
+**No Default Models**: AIA doesn't assume any default models. When you run `aia consult` without specifying models, it uses the models from your configured default service. If no default service is set, AIA will guide you through the setup wizard.
 
 Environment variables (optional):
 - `OPENAI_API_KEY` - OpenAI API key

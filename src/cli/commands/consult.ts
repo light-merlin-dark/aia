@@ -140,11 +140,22 @@ Examples:
 
       // Use default models if none specified
       if (models.length === 0) {
-        models = config.defaultModels || [];
+        // Check if we have a default service configured
+        const defaultService = config.services?.default?.service;
+        if (defaultService && config.services[defaultService]?.models) {
+          models = config.services[defaultService].models;
+          if (verbose) {
+            logger.info(`Using models from default service '${defaultService}':`, models);
+          }
+        } else {
+          // Fall back to legacy defaultModels/defaultModel
+          models = config.defaultModels || (config.defaultModel ? [config.defaultModel] : []);
+        }
+        
         if (models.length === 0) {
           return {
             success: false,
-            message: 'No models specified and no default models configured.'
+            message: 'No models specified and no default service configured. Run "aia config wizard" to set up.'
           };
         }
       }

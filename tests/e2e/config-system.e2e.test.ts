@@ -191,4 +191,157 @@ describe('Config System E2E Tests', () => {
     expect(decrypted1).toBe(testData);
     expect(decrypted2).toBe(testData);
   });
+
+  it('should backup and restore configuration', async () => {
+    // Import ConfigManager for testing
+    const { ConfigManager } = await import('../../src/config/manager');
+    
+    // Reset singleton for clean test
+    ConfigManager.resetInstance();
+    
+    // Create a test config manager with our test directory
+    const configManager = ConfigManager.getInstance();
+    configManager.CONFIG_DIR = testDir;
+    configManager.CONFIG_FILE = testConfigFile;
+    configManager.KEY_FILE = testKeyFile;
+    configManager.disableEnvMerge = true;
+    
+    // Create initial config
+    const initialConfig = {
+      services: {
+        openai: {
+          apiKey: 'original-key',
+          models: ['gpt-4']
+        },
+        default: {
+          apiKey: '',
+          service: 'openai'
+        }
+      },
+      maxRetries: 2,
+      timeout: 30000
+    };
+    
+    // Save initial config
+    await configManager.saveConfig(initialConfig);
+    
+    // Create backup
+    const backupName = await configManager.backupConfig();
+    expect(backupName).toBe('default');
+    
+    // Verify backup file exists
+    const backupFile = join(testDir, 'backup-default.enc');
+    expect(existsSync(backupFile)).toBe(true);
+    
+    // Modify config
+    const modifiedConfig = {
+      services: {
+        anthropic: {
+          apiKey: 'new-key',
+          models: ['claude-3']
+        },
+        default: {
+          apiKey: '',
+          service: 'anthropic'
+        }
+      },
+      maxRetries: 5,
+      timeout: 60000
+    };
+    
+    await configManager.saveConfig(modifiedConfig);
+    
+    // Verify config was changed
+    const currentConfig = await configManager.getConfig();
+    expect(currentConfig.services.openai).toBeUndefined();
+    expect(currentConfig.services.anthropic?.apiKey).toBe('new-key');
+    
+    // Restore from backup
+    await configManager.restoreConfig();
+    
+    // Verify config was restored
+    const restoredConfig = await configManager.getConfig();
+    expect(restoredConfig.services.openai?.apiKey).toBe('original-key');
+    expect(restoredConfig.services.anthropic).toBeUndefined();
+    expect(restoredConfig.maxRetries).toBe(2);
+  });
+
+  it('should handle named backups', async () => {
+    const { ConfigManager } = await import('../../src/config/manager');
+    ConfigManager.resetInstance();
+    const configManager = ConfigManager.getInstance();
+    configManager.CONFIG_DIR = testDir;
+    configManager.CONFIG_FILE = testConfigFile;
+    configManager.KEY_FILE = testKeyFile;
+    configManager.disableEnvMerge = true;
+    
+    const config1 = {
+      services: { openai: { apiKey: 'key1', models: ['gpt-3.5-turbo'] } },
+      maxRetries: 1,
+      timeout: 10000
+    };
+    
+    const config2 = {
+      services: { anthropic: { apiKey: 'key2', models: ['claude-3'] } },
+      maxRetries: 2,
+      timeout: 20000
+    };
+    
+    // Create multiple named backups
+    await configManager.saveConfig(config1);
+    await configManager.backupConfig('version1');
+    
+    await configManager.saveConfig(config2);
+    await configManager.backupConfig('version2');
+    
+    // List backups
+    const backups = await configManager.listBackups();
+    expect(backups).toContain('version1');
+    expect(backups).toContain('version2');
+    
+    // Restore specific backup
+    await configManager.restoreConfig('version1');
+    const restored1 = await configManager.getConfig();
+    expect(restored1.services.openai?.apiKey).toBe('key1');
+    expect(restored1.maxRetries).toBe(1);
+    
+    await configManager.restoreConfig('version2');
+    const restored2 = await configManager.getConfig();
+    expect(restored2.services.anthropic?.apiKey).toBe('key2');
+    expect(restored2.maxRetries).toBe(2);
+  });
+
+  it('should clear configuration', async () => {
+    const { ConfigManager } = await import('../../src/config/manager');
+    ConfigManager.resetInstance();
+    const configManager = ConfigManager.getInstance();
+    configManager.CONFIG_DIR = testDir;
+    configManager.CONFIG_FILE = testConfigFile;
+    configManager.KEY_FILE = testKeyFile;
+    configManager.disableEnvMerge = true;
+    
+    // Create config with data
+    const config = {
+      services: {
+        openai: { apiKey: 'test-key', models: ['gpt-4'] },
+        anthropic: { apiKey: 'test-key2', models: ['claude-3'] }
+      },
+      defaultModel: 'gpt-4',
+      maxRetries: 3,
+      timeout: 45000
+    };
+    
+    await configManager.saveConfig(config);
+    
+    // Clear config
+    await configManager.clearConfig();
+    
+    // Verify config is empty
+    const clearedConfig = await configManager.getConfig();
+    expect(Object.keys(clearedConfig.services)).toHaveLength(0);
+    expect(clearedConfig.defaultModel).toBeUndefined();
+    expect(clearedConfig.defaultModels).toBeUndefined();
+    expect(clearedConfig.maxRetries).toBe(2); // Default value
+    expect(clearedConfig.timeout).toBe(60000); // Default value
+  });
 });

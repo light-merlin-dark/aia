@@ -24,14 +24,7 @@ class OpenAIPlugin implements AIProviderPlugin {
   private logger: Logger | null = null;
   private config: OpenAIPluginConfig = {};
   
-  private models = [
-    'gpt-4-turbo-preview',
-    'gpt-4-turbo',
-    'gpt-4',
-    'gpt-4-32k',
-    'gpt-3.5-turbo',
-    'gpt-3.5-turbo-16k',
-  ];
+  private models: string[] = [];
   
   mcpContext = {
     section: 'OpenAI Models',
@@ -45,6 +38,11 @@ class OpenAIPlugin implements AIProviderPlugin {
   async onLoad(context: PluginContext): Promise<void> {
     this.logger = context.services.logger;
     this.config = context.pluginConfig || {};
+    
+    // Populate models from config (no defaults)
+    if (this.config.models && Array.isArray(this.config.models)) {
+      this.models = this.config.models;
+    }
     
     // Initialize OpenAI client
     const apiKey = this.config.apiKey || process.env.OPENAI_API_KEY;

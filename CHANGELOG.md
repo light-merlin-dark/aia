@@ -5,6 +5,40 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-06-19
+
+### Added
+- **Configuration Backup and Restore**
+  - New MCP tools for configuration management:
+    - `config-backup`: Create encrypted backups of current configuration
+    - `config-restore`: Restore configuration from backups
+    - `config-list-backups`: List all available backups
+    - `config-clear`: Completely clear configuration with confirmation
+  - Support for named backups (defaults to 'default' if no name provided)
+  - All backups are encrypted using the same security as main config
+  
+- **Default Service Configuration**
+  - Removed hardcoded default models (no more gpt-3.5-turbo assumptions)
+  - System now uses models from configured default service
+  - When no models specified, uses the default service's models
+  - More transparent and user-controlled model selection
+  
+- **New Configuration Commands**
+  - `config-clear-default`: Clear global default model configuration
+  - Better configuration flexibility and control
+
+### Changed
+- **Configuration Model Selection**
+  - No longer assumes any default models
+  - Uses default service configuration instead of hardcoded defaults
+  - Wizard sets default service instead of default model
+  - MCP server and CLI consult commands updated to use default service models
+
+### Fixed
+- Configuration fallback behavior now properly respects default service
+- Test isolation improved with environment variable merge control
+- Mock AI providers added to E2E tests for better test reliability
+
 ## [0.3.0] - 2025-06-19
 
 ### Changed

@@ -43,9 +43,6 @@ export async function runOnboardingWizard(
     type: 'text',
     name: 'model',
     message: `Enter model name for ${service}:`,
-    initial: service === 'openai' ? 'gpt-4-turbo' : 
-             service === 'anthropic' ? 'claude-3-opus-20240229' : 
-             'google/gemini-pro',
     validate: (value: string) => value.trim() ? true : 'Model name is required'
   });
   
@@ -54,22 +51,68 @@ export async function runOnboardingWizard(
     return config;
   }
   
-  // Ask for API key
-  const { apiKey } = await prompts({
-    type: 'password',
-    name: 'apiKey',
-    message: `Enter ${service} API key:`,
-    validate: (value: string) => {
-      if (!value) return 'API key is required';
-      if (service === 'openai' && !value.startsWith('sk-')) {
-        return 'OpenAI API key should start with "sk-"';
-      }
-      if (service === 'anthropic' && !value.includes('ant')) {
-        return 'Anthropic API key should contain "ant"';
-      }
-      return true;
+  // Check for existing API key in environment
+  const envVarMap: Record<string, string> = {
+    openai: 'OPENAI_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
+    openrouter: 'OPENROUTER_API_KEY'
+  };
+  
+  const envVar = envVarMap[service];
+  const existingApiKey = process.env[envVar];
+  
+  let apiKey: string | undefined;
+  
+  if (existingApiKey) {
+    // Show discovered key (partially masked)
+    const maskedKey = existingApiKey.slice(0, 6) + '...' + existingApiKey.slice(-4);
+    console.log(chalk.gray(`Found existing ${envVar}: ${maskedKey}`));
+    
+    const { useExisting } = await prompts({
+      type: 'confirm',
+      name: 'useExisting',
+      message: `Use existing ${service} API key from environment?`,
+      initial: true
+    });
+    
+    if (useExisting) {
+      apiKey = existingApiKey;
+    } else {
+      const { customKey } = await prompts({
+        type: 'password',
+        name: 'customKey',
+        message: `Enter custom ${service} API key:`,
+        validate: (value: string) => {
+          if (!value) return 'API key is required';
+          if (service === 'openai' && !value.startsWith('sk-')) {
+            return 'OpenAI API key should start with "sk-"';
+          }
+          if (service === 'anthropic' && !value.includes('ant')) {
+            return 'Anthropic API key should contain "ant"';
+          }
+          return true;
+        }
+      });
+      apiKey = customKey;
     }
-  });
+  } else {
+    const { manualKey } = await prompts({
+      type: 'password',
+      name: 'manualKey',
+      message: `Enter ${service} API key:`,
+      validate: (value: string) => {
+        if (!value) return 'API key is required';
+        if (service === 'openai' && !value.startsWith('sk-')) {
+          return 'OpenAI API key should start with "sk-"';
+        }
+        if (service === 'anthropic' && !value.includes('ant')) {
+          return 'Anthropic API key should contain "ant"';
+        }
+        return true;
+      }
+    });
+    apiKey = manualKey;
+  }
   
   if (!apiKey) {
     console.log(chalk.yellow(`\nSkipping ${service} configuration`));
@@ -139,10 +182,12 @@ export async function runOnboardingWizard(
     ...(pricing && { pricing })
   };
   
-  // Set as default model if it's the first one
-  if (!config.defaultModel) {
-    config.defaultModel = model;
-    config.defaultModels = [model];
+  // Set as default service if it's the first one
+  if (!config.services.default) {
+    config.services.default = {
+      apiKey: '',
+      service: service
+    };
   }
   
   // Enable the plugin

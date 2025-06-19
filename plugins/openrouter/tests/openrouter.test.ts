@@ -45,12 +45,9 @@ describe('OpenRouter Plugin', () => {
   });
 
   describe('listModels', () => {
-    it('should return available models', () => {
+    it('should return empty array by default', () => {
       const models = plugin.listModels();
-      expect(models).toContain('openai/gpt-4-turbo-preview');
-      expect(models).toContain('anthropic/claude-3-opus');
-      expect(models).toContain('google/gemini-pro');
-      expect(models).toContain('meta-llama/llama-3-70b-instruct');
+      expect(models).toEqual([]);
     });
   });
 

@@ -52,12 +52,9 @@ describe('Anthropic Plugin', () => {
   });
 
   describe('listModels', () => {
-    it('should return available models', () => {
+    it('should return empty array by default', () => {
       const models = plugin.listModels();
-      expect(models).toContain('claude-3-opus-20240229');
-      expect(models).toContain('claude-3-sonnet-20240229');
-      expect(models).toContain('claude-3-haiku-20240307');
-      expect(models).toContain('claude-2.1');
+      expect(models).toEqual([]);
     });
   });
 
@@ -210,20 +207,17 @@ describe('Anthropic Plugin', () => {
   });
 
   describe('isModelAvailable', () => {
-    it('should return true for available models', () => {
-      expect(plugin.isModelAvailable('claude-3-opus-20240229')).toBe(true);
-      expect(plugin.isModelAvailable('claude-2.1')).toBe(true);
-    });
-
-    it('should support shorthand model names', () => {
-      expect(plugin.isModelAvailable('claude-3-opus')).toBe(true);
-      expect(plugin.isModelAvailable('claude-3-sonnet')).toBe(true);
-      expect(plugin.isModelAvailable('claude-3-haiku')).toBe(true);
-    });
-
-    it('should return false for unavailable models', () => {
+    it('should return false for any model by default (no models configured)', () => {
+      expect(plugin.isModelAvailable('claude-3-opus-20240229')).toBe(false);
+      expect(plugin.isModelAvailable('claude-2.1')).toBe(false);
       expect(plugin.isModelAvailable('claude-4')).toBe(false);
       expect(plugin.isModelAvailable('invalid-model')).toBe(false);
+    });
+
+    it('should still support shorthand mapping logic (returns false without configured models)', () => {
+      expect(plugin.isModelAvailable('claude-3-opus')).toBe(false);
+      expect(plugin.isModelAvailable('claude-3-sonnet')).toBe(false);
+      expect(plugin.isModelAvailable('claude-3-haiku')).toBe(false);
     });
   });
 
