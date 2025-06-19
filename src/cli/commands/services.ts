@@ -39,7 +39,18 @@ Examples:
       for (const [service, details] of Object.entries(config.services)) {
         const models = details.models || [];
         const modelStr = models.length > 0 ? models.join(', ') : 'No models configured';
-        console.log(`  ${chalk.cyan(service)}:`);
+        const isEnabled = config.plugins?.enabled?.includes(service) ?? true;
+        const isDefault = models.includes(config.defaultModel || '');
+        
+        let statusStr = '';
+        if (isDefault) {
+          statusStr = chalk.green(' (default)');
+        }
+        if (!isEnabled) {
+          statusStr += chalk.yellow(' (disabled)');
+        }
+        
+        console.log(`  ${chalk.cyan(service)}${statusStr}:`);
         console.log(`    Models: ${modelStr}`);
         console.log(`    API Key: ${chalk.gray('***' + details.apiKey.slice(-4))}\n`);
       }
@@ -51,6 +62,8 @@ Examples:
         message: 'What would you like to do?',
         choices: [
           { title: 'Update service', value: 'update' },
+          { title: 'Enable/Disable service', value: 'toggle' },
+          { title: 'Set default service', value: 'default' },
           { title: 'Remove service', value: 'remove' },
           { title: 'Add new service', value: 'add' },
           { title: 'Exit', value: 'exit' }
@@ -80,6 +93,68 @@ Examples:
       });
 
       if (!service) {
+        return { success: true };
+      }
+
+      if (action === 'toggle') {
+        // Initialize plugins config if needed
+        if (!config.plugins) {
+          config.plugins = { enabled: [] };
+        }
+        if (!config.plugins.enabled) {
+          config.plugins.enabled = [];
+        }
+        
+        const isEnabled = config.plugins.enabled.includes(service);
+        const { toggle } = await prompts({
+          type: 'confirm',
+          name: 'toggle',
+          message: isEnabled ? `Disable ${service}?` : `Enable ${service}?`,
+          initial: true
+        });
+
+        if (toggle) {
+          if (isEnabled) {
+            config.plugins.enabled = config.plugins.enabled.filter(p => p !== service);
+            console.log(chalk.yellow(`\n⚠️  ${service} disabled\n`));
+          } else {
+            config.plugins.enabled.push(service);
+            console.log(chalk.green(`\n✅ ${service} enabled\n`));
+          }
+          await configManager.saveConfig(config);
+        }
+        return { success: true };
+      }
+
+      if (action === 'default') {
+        const serviceDetails = config.services[service];
+        const models = serviceDetails.models || [];
+        
+        if (models.length === 0) {
+          console.log(chalk.yellow(`\n⚠️  ${service} has no models configured. Please update the service first.\n`));
+          return { success: true };
+        }
+
+        let selectedModel = models[0];
+        
+        if (models.length > 1) {
+          const { model } = await prompts({
+            type: 'select',
+            name: 'model',
+            message: `Select default model for ${service}:`,
+            choices: models.map(m => ({ title: m, value: m }))
+          });
+          
+          if (!model) {
+            return { success: true };
+          }
+          selectedModel = model;
+        }
+
+        config.defaultModel = selectedModel;
+        config.defaultModels = [selectedModel];
+        await configManager.saveConfig(config);
+        console.log(chalk.green(`\n✅ Default model set to ${selectedModel}\n`));
         return { success: true };
       }
 
