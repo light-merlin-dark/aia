@@ -5,6 +5,28 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.7] - 2025-06-20
+
+### Fixed
+- **OpenRouter Model Resolution**
+  - Fixed critical bug parsing OpenRouter models with multiple slashes (e.g., `google/gemini-2.5-pro-preview`)
+  - Model resolver now correctly handles complex model names like `openrouter/google/gemini-2.5-pro-preview`
+  - Improved fallback logic: if a string with slashes doesn't match service/model format, treats it as bare model name
+  - Added comprehensive test coverage for OpenRouter model resolution scenarios
+  - Both full (`openrouter/google/gemini-2.5-pro-preview`) and bare (`google/gemini-2.5-pro-preview`) model specifications now work correctly
+
+### Added
+- **Test Utilities**
+  - New test utility `/tests/utils/call-mcp.ts` for direct MCP server testing
+  - Enhanced unit test coverage for model resolution edge cases
+  - Live testing capabilities for real API integration validation
+
+### Changed
+- **Model Resolution Logic**
+  - Changed from `split('/', 2)` to `indexOf()` and `substring()` for proper slash handling
+  - Enhanced model name parsing to support provider-specific naming conventions
+  - Improved error messages to distinguish between parsing and configuration issues
+
 ## [0.8.2] - 2025-06-20
 
 ### Fixed

@@ -300,7 +300,7 @@ AIA features a powerful plugin architecture for AI provider integration.
 
 - **OpenAI**: Access to O3-mini, GPT-4, GPT-4 Turbo, GPT-3.5-turbo
 - **Anthropic**: Claude Sonnet 4, Claude Opus 4, Claude 3 models
-- **OpenRouter**: Gateway to 50+ models with automatic routing
+- **OpenRouter**: Gateway to 50+ models including Google Gemini, Mixtral, and more
 
 ### Plugin Development
 
@@ -362,9 +362,9 @@ aia consult "Compare microservices vs monolith for this use case" \
 aia consult "Why is this function returning undefined?" \
   -f buggy-function.js tests/function.test.js -m gpt-4-turbo claude-3
 
-# Performance Optimization
+# Performance Optimization with OpenRouter models
 aia consult "Optimize this SQL query" -f slow-query.sql \
-  -m gpt-4 claude-3 openrouter/mixtral
+  -m gpt-4 claude-3 openrouter/google/gemini-2.5-pro-preview
 ```
 
 ## ⚙️ Configuration

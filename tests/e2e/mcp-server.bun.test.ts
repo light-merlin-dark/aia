@@ -1084,5 +1084,88 @@ describe('MCP Server E2E Tests (Bun)', () => {
       expect(result.responses[1].model).toBe('anthropic/claude-sonnet-4-20250514');
       expect(result.responses[2].model).toBe('openrouter/minimax/minimax-m1');
     });
+    
+    test('should correctly resolve OpenRouter models with multiple slashes (google/gemini-2.5-pro-preview)', async () => {
+      // Add Google Gemini model to OpenRouter
+      await sendRequest(mcpProcess, {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'config-set',
+          arguments: {
+            service: 'openrouter',
+            key: 'models',
+            value: 'google/gemini-2.5-pro-preview'
+          }
+        },
+        id: 921
+      });
+      
+      // Set OpenRouter as default service
+      await sendRequest(mcpProcess, {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'config-set-default-service',
+          arguments: {
+            service: 'openrouter'
+          }
+        },
+        id: 922
+      });
+      
+      // Test with full service/model specification
+      const consultFullRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.',
+            models: ['openrouter/google/gemini-2.5-pro-preview']
+          }
+        },
+        id: 923
+      };
+      
+      const fullResponse = await sendRequest(mcpProcess, consultFullRequest);
+      
+      expect(fullResponse.result).toBeDefined();
+      // Should not have error about model resolution
+      if (fullResponse.result.isError) {
+        expect(fullResponse.result.content[0].text).not.toContain('Failed to resolve models');
+        expect(fullResponse.result.content[0].text).not.toContain("Model 'google' not configured");
+      } else {
+        const resultText = fullResponse.result.content[0].text;
+        const result = JSON.parse(resultText);
+        expect(result.responses[0].model).toBe('openrouter/google/gemini-2.5-pro-preview');
+      }
+      
+      // Test with bare model name (should resolve to openrouter since it's default)
+      const consultBareRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.',
+            models: ['google/gemini-2.5-pro-preview']
+          }
+        },
+        id: 924
+      };
+      
+      const bareResponse = await sendRequest(mcpProcess, consultBareRequest);
+      
+      expect(bareResponse.result).toBeDefined();
+      if (bareResponse.result.isError) {
+        expect(bareResponse.result.content[0].text).not.toContain('Failed to resolve models');
+        expect(bareResponse.result.content[0].text).not.toContain("Service 'google' not found");
+      } else {
+        const resultText = bareResponse.result.content[0].text;
+        const result = JSON.parse(resultText);
+        expect(result.responses[0].model).toBe('openrouter/google/gemini-2.5-pro-preview');
+      }
+    });
   });
 });

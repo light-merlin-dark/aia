@@ -18,23 +18,19 @@ export class ModelResolver {
   static async resolveModel(modelName: string, config: any): Promise<ResolvedModel> {
     // Check if model already includes service prefix
     if (modelName.includes('/')) {
-      const [service, model] = modelName.split('/', 2);
+      const firstSlashIndex = modelName.indexOf('/');
+      const service = modelName.substring(0, firstSlashIndex);
+      const model = modelName.substring(firstSlashIndex + 1);
       
-      // Verify service exists
-      if (!config.services[service]) {
-        throw new Error(`Service '${service}' not found. Available services: ${Object.keys(config.services).filter(s => s !== 'default').join(', ')}`);
+      // Verify service exists and model is configured for this service
+      if (config.services[service] && 
+          config.services[service].models && 
+          config.services[service].models.includes(model)) {
+        return { service, model, fullName: modelName };
       }
       
-      // Verify model is configured for this service
-      const serviceConfig = config.services[service];
-      if (!serviceConfig.models || !serviceConfig.models.includes(model)) {
-        throw new Error(
-          `Model '${model}' not configured for service '${service}'.\n` +
-          `Available models for ${service}: ${serviceConfig.models?.join(', ') || 'none'}`
-        );
-      }
-      
-      return { service, model, fullName: modelName };
+      // If the service doesn't exist or model isn't in that service,
+      // treat this as a bare model name and continue with the search below
     }
     
     // Search for model in all services
