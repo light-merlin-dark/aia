@@ -37,7 +37,8 @@ export class PluginRegistry implements IPluginRegistry {
     
     // Enable plugins that have configuration in services
     for (const pluginName of Object.keys(config.services || {})) {
-      if (!disabledList.includes(pluginName)) {
+      // Skip 'default' as it's not a plugin
+      if (pluginName !== 'default' && !disabledList.includes(pluginName)) {
         await this.enable(pluginName);
       }
     }
@@ -48,6 +49,10 @@ export class PluginRegistry implements IPluginRegistry {
         await this.enable(pluginName);
       }
     }
+  }
+  
+  updateConfig(config: any): void {
+    this.context.config = config;
   }
   
   async register(plugin: Plugin): Promise<void> {

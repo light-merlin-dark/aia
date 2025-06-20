@@ -139,7 +139,41 @@ export class Orchestrator {
   ): Promise<AIResponse> {
     const provider = registry.getAIProvider(model);
     if (!provider) {
-      throw new Error(`No provider found for model: ${model}`);
+      // Check if this might be a service name instead of a model
+      const allPlugins = registry.getEnabledPlugins();
+      const serviceNames = allPlugins.map(p => p.name);
+      
+      if (serviceNames.includes(model)) {
+        throw new Error(
+          `"${model}" is a service name, not a model. Please specify a model like:\n` +
+          `- For OpenAI: o3-mini, gpt-4-turbo\n` +
+          `- For Anthropic: claude-sonnet-4-20250514, claude-opus-4-20250514\n` +
+          `- For OpenRouter: Use provider/model format\n\n` +
+          `To see available models, use: aia config-list`
+        );
+      }
+      
+      // List available models from all enabled providers
+      const availableModels: string[] = [];
+      for (const plugin of allPlugins) {
+        if ('listModels' in plugin && typeof plugin.listModels === 'function') {
+          const models = plugin.listModels();
+          if (models.length > 0) {
+            availableModels.push(`${plugin.name}: ${models.join(', ')}`);
+          }
+        }
+      }
+      
+      let errorMsg = `Model "${model}" not found or not configured.\n\n`;
+      if (availableModels.length > 0) {
+        errorMsg += `Available models:\n${availableModels.map(m => `- ${m}`).join('\n')}\n\n`;
+      } else {
+        errorMsg += `No models configured. Please configure models using:\n`;
+        errorMsg += `aia config-set <service> models <model1,model2>\n\n`;
+      }
+      errorMsg += `To set a default model: aia config-set-default <model>`;
+      
+      throw new Error(errorMsg);
     }
     
     this.logger.debug(`Executing model ${model} with provider ${provider.name}`);

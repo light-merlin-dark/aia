@@ -22,6 +22,7 @@ class AnthropicPlugin implements AIProviderPlugin {
   private client: Anthropic | null = null;
   private logger: Logger | null = null;
   private config: AnthropicPluginConfig = {};
+  private context: PluginContext | null = null;
   
   private models: string[] = [];
   
@@ -37,6 +38,7 @@ class AnthropicPlugin implements AIProviderPlugin {
   async onLoad(context: PluginContext): Promise<void> {
     this.logger = context.services.logger;
     this.config = context.pluginConfig || {};
+    this.context = context;
     
     // Populate models from config (no defaults)
     if (this.config.models && Array.isArray(this.config.models)) {
@@ -59,6 +61,14 @@ class AnthropicPlugin implements AIProviderPlugin {
   }
 
   listModels(): string[] {
+    // Check context for live config if available
+    if (this.context && this.context.config?.services?.anthropic?.models) {
+      return [...this.context.config.services.anthropic.models];
+    }
+    // Fall back to initial config
+    if (this.config.models && Array.isArray(this.config.models)) {
+      return [...this.config.models];
+    }
     return [...this.models];
   }
 
@@ -148,8 +158,11 @@ class AnthropicPlugin implements AIProviderPlugin {
   }
 
   isModelAvailable(model: string): boolean {
+    // Get current models list
+    const currentModels = this.listModels();
+    
     // Support both full model names and shorthand versions
-    if (this.models.includes(model)) {
+    if (currentModels.includes(model)) {
       return true;
     }
     
@@ -158,10 +171,12 @@ class AnthropicPlugin implements AIProviderPlugin {
       'claude-3-opus': 'claude-3-opus-20240229',
       'claude-3-sonnet': 'claude-3-sonnet-20240229',
       'claude-3-haiku': 'claude-3-haiku-20240307',
+      'claude-sonnet-4': 'claude-sonnet-4-20250514',
+      'claude-opus-4': 'claude-opus-4-20250514',
     };
     
     if (model in shorthandMap) {
-      return this.models.includes(shorthandMap[model]);
+      return currentModels.includes(shorthandMap[model]);
     }
     
     return false;

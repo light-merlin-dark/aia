@@ -662,7 +662,7 @@ describe('MCP Server E2E Tests (Bun)', () => {
     expect(doctorOutput).toContain('🔌 Plugin Status');
     expect(doctorOutput).toContain('📋 Recent Logs');
     expect(doctorOutput).toContain('💡 Health Checks & Recommendations');
-    expect(doctorOutput).toContain('📚 Helpful Commands');
+    expect(doctorOutput).toContain('📚 Helpful MCP Tool Commands');
     
     // Verify system information
     expect(doctorOutput).toMatch(/Version: \d+\.\d+\.\d+/);
@@ -685,7 +685,7 @@ describe('MCP Server E2E Tests (Bun)', () => {
     expect(doctorOutput).toMatch(/Log Summary: \d+ errors, \d+ warnings, \d+ info messages/);
     
     // Verify helpful commands section
-    expect(doctorOutput).toContain('config-view-logs --level ERROR');
+    expect(doctorOutput).toContain("config-view-logs (with level='ERROR')");
     expect(doctorOutput).toContain('config-set-pricing');
     expect(doctorOutput).toContain('config-backup');
   });

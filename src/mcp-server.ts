@@ -211,16 +211,47 @@ async function main() {
         if (targetModels.length === 0) {
           // Check if we have a default service configured
           const defaultService = config.services?.default?.service;
-          if (defaultService && config.services[defaultService]?.models) {
-            targetModels = config.services[defaultService].models;
-            logger.debug(`Using models from default service '${defaultService}':`, targetModels);
+          if (defaultService && config.services[defaultService]) {
+            const serviceConfig = config.services[defaultService];
+            if (serviceConfig.models && serviceConfig.models.length > 0) {
+              // Use first model from default service if multiple configured
+              targetModels = [serviceConfig.models[0]];
+              logger.debug(`Using first model from default service '${defaultService}': ${targetModels[0]}`);
+              logToFile('DEBUG', `Using first model from default service '${defaultService}': ${targetModels[0]}`);
+            } else {
+              throw new Error(
+                `Default service '${defaultService}' has no models configured.\n` +
+                `Configure models using: aia config-set ${defaultService} models <model1,model2>`
+              );
+            }
+          } else if (config.services?.default?.service) {
+            throw new Error(
+              `Default service '${config.services.default.service}' is not configured.\n` +
+              `Available services: ${Object.keys(config.services).filter(s => s !== 'default').join(', ')}`
+            );
           } else {
-            // Fall back to legacy defaultModels/defaultModel
-            targetModels = config.defaultModels || (config.defaultModel ? [config.defaultModel] : []);
+            // No default service configured
+            const availableServices = Object.keys(config.services).filter(s => s !== 'default');
+            throw new Error(
+              `No models specified and no default service configured.\n` +
+              `Set a default service: aia config-set default service <service>\n` +
+              `Available services: ${availableServices.join(', ')}`
+            );
           }
-          
-          if (targetModels.length === 0) {
-            throw new Error('No models specified and no default models configured');
+        }
+        
+        // Validate that models are not service names
+        const serviceNames = Object.keys(config.services).filter(s => s !== 'default');
+        for (const model of targetModels) {
+          if (serviceNames.includes(model)) {
+            const serviceConfig = config.services[model];
+            const availableModels = serviceConfig.models || [];
+            throw new Error(
+              `"${model}" is a service name, not a model.\n` +
+              `Available models for ${model}: ${availableModels.join(', ') || 'none configured'}\n` +
+              `Use one of these models instead, or configure models using:\n` +
+              `aia config-set ${model} models <model1,model2>`
+            );
           }
         }
 
