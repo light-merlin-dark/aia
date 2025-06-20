@@ -5,6 +5,29 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.10] - 2025-06-20
+
+### Fixed
+- **OpenRouter Model Name Handling**
+  - Fixed critical orchestrator bug where service prefixes were incorrectly stripped from OpenRouter models
+  - Models like `openrouter/google/gemini-2.5-pro-preview` now correctly pass `google/gemini-2.5-pro-preview` to the plugin
+  - Enhanced plugin registry to check both service config and plugin's `isModelAvailable` method
+  - Fixed model resolution for complex provider-specific model names with multiple slashes
+
+### Improved
+- **Test Performance Optimization**
+  - Reduced test timeouts from 10-30 seconds to 2-5 seconds for faster development cycles
+  - Simplified test prompts from complex questions to simple math ("1+1=", "2+2=") for faster API responses
+  - Optimized timeout scenarios in orchestrator tests (2000ms → 1000ms delays, 500ms → 300ms timeouts)
+  - Enhanced test reliability while maintaining comprehensive coverage
+
+### Added
+- **Default Model Behavior Tests**
+  - Added comprehensive end-to-end tests for single default model consultation
+  - Added tests for no-default-model error handling scenarios
+  - Verified that parallel consultation only occurs when explicitly requested
+  - Enhanced MCP server test suite with default behavior validation
+
 ## [0.8.7] - 2025-06-20
 
 ### Fixed

@@ -148,7 +148,10 @@ export class PluginRegistry implements IPluginRegistry {
   getAIProvider(nameOrModel: string): AIProviderPlugin | undefined {
     // Handle service/model format
     if (nameOrModel.includes('/')) {
-      const [serviceName, modelName] = nameOrModel.split('/', 2);
+      const firstSlashIndex = nameOrModel.indexOf('/');
+      const serviceName = nameOrModel.substring(0, firstSlashIndex);
+      const modelName = nameOrModel.substring(firstSlashIndex + 1);
+      
       const plugin = this.plugins.get(serviceName);
       
       if (plugin && this.isAIProvider(plugin) && this.enabledPlugins.has(serviceName)) {
@@ -157,6 +160,11 @@ export class PluginRegistry implements IPluginRegistry {
         // Check if the model is configured for this service
         const serviceConfig = this.context.config?.services?.[serviceName];
         if (serviceConfig?.models?.includes(modelName)) {
+          return aiPlugin;
+        }
+        
+        // Also check if plugin reports the full model as available (for nested models like google/gemini)
+        if (aiPlugin.isModelAvailable && aiPlugin.isModelAvailable(modelName)) {
           return aiPlugin;
         }
       }
@@ -170,12 +178,20 @@ export class PluginRegistry implements IPluginRegistry {
       return directPlugin as AIProviderPlugin;
     }
     
-    // Then try to find by model in configured services
+    // Then try to find by model in configured services or plugin's available models
     for (const [pluginName, plugin] of this.plugins) {
       if (this.isAIProvider(plugin) && this.enabledPlugins.has(pluginName)) {
+        const aiPlugin = plugin as AIProviderPlugin;
+        
+        // Check if model is in service config
         const serviceConfig = this.context.config?.services?.[pluginName];
         if (serviceConfig?.models?.includes(nameOrModel)) {
-          return plugin as AIProviderPlugin;
+          return aiPlugin;
+        }
+        
+        // Also check if plugin reports the model as available
+        if (aiPlugin.isModelAvailable && aiPlugin.isModelAvailable(nameOrModel)) {
+          return aiPlugin;
         }
       }
     }

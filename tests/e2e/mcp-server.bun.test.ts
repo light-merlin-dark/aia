@@ -57,11 +57,11 @@ async function sendRequest(proc: ChildProcess, request: any): Promise<any> {
     proc.stdout?.on('data', handler);
     proc.stdin?.write(JSON.stringify(request) + '\n');
     
-    // Timeout after 10 seconds
+    // Timeout after 5 seconds
     setTimeout(() => {
       proc.stdout?.removeListener('data', handler);
       reject(new Error(`Timeout waiting for response to request ${request.id}`));
-    }, 10000);
+    }, 5000);
   });
 }
 
@@ -98,7 +98,7 @@ describe('MCP Server E2E Tests (Bun)', () => {
     });
 
     // Wait for server to be ready
-    await waitForOutput(mcpProcess, 'MCP server successfully started', 3000);
+    await waitForOutput(mcpProcess, 'MCP server successfully started', 2000);
   });
 
   afterAll(() => {
@@ -185,7 +185,7 @@ describe('MCP Server E2E Tests (Bun)', () => {
       params: {
         name: 'consult',
         arguments: {
-          prompt: 'What is 2 + 2? Reply with just the number.',
+          prompt: '1+1=',
           models: ['test-model']
         }
       },
@@ -1167,5 +1167,81 @@ describe('MCP Server E2E Tests (Bun)', () => {
         expect(result.responses[0].model).toBe('openrouter/google/gemini-2.5-pro-preview');
       }
     });
+  });
+
+  test('should use default model when no models specified', async () => {
+    // First set a default model
+    const setDefaultRequest = {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-set-default',
+        arguments: {
+          model: 'test-model'
+        }
+      },
+      id: 1001
+    };
+
+    await sendRequest(mcpProcess, setDefaultRequest);
+
+    // Now consult without specifying models
+    const consultRequest = {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'consult',
+        arguments: {
+          prompt: '1+1='
+          // No models specified - should use default
+        }
+      },
+      id: 1002
+    };
+
+    const response = await sendRequest(mcpProcess, consultRequest);
+    
+    expect(response.result).toBeDefined();
+    const resultText = response.result.content[0].text;
+    const result = JSON.parse(resultText);
+    
+    // Should have exactly one response from the default model
+    expect(result.responses).toHaveLength(1);
+    expect(result.responses[0].model).toBe('test-model');
+  });
+
+  test('should prompt to set default when no models specified and no default', async () => {
+    // First clear any default model
+    const clearDefaultRequest = {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-clear-default',
+        arguments: {}
+      },
+      id: 1101
+    };
+
+    await sendRequest(mcpProcess, clearDefaultRequest);
+
+    // Now consult without specifying models
+    const consultRequest = {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'consult',
+        arguments: {
+          prompt: '1+1='
+          // No models specified and no default
+        }
+      },
+      id: 1102
+    };
+
+    const response = await sendRequest(mcpProcess, consultRequest);
+    
+    expect(response.result.isError).toBe(true);
+    expect(response.result.content[0].text).toContain('No models specified');
+    expect(response.result.content[0].text).toContain('Available models');
   });
 });

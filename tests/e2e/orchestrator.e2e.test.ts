@@ -118,7 +118,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should orchestrate single model consultation', async () => {
-    const prompt = 'What is the meaning of life?';
+    const prompt = '1+1=';
     
     const result = await orchestrate({
       prompt,
@@ -135,13 +135,13 @@ describe('Orchestrator E2E Tests', () => {
     expect(response.model).toBe('fast-ai-model-1');
     expect(response.provider).toBe('fast-ai');
     expect(response.content).toContain('Mock response from fast-ai');
-    expect(response.content).toContain('What is the meaning of life?');
+    expect(response.content).toContain('1+1=');
     expect(response.usage).toBeTruthy();
     expect(response.usage?.promptTokens).toBeGreaterThan(0);
   });
 
   it('should orchestrate multiple models in parallel', async () => {
-    const prompt = 'Explain quantum computing';
+    const prompt = '2+2=';
     
     const startTime = Date.now();
     const result = await orchestrate({
@@ -164,13 +164,13 @@ describe('Orchestrator E2E Tests', () => {
 
     // Each response should have correct content
     result.responses.forEach(response => {
-      expect(response.content).toContain('Explain quantum computing');
+      expect(response.content).toContain('2+2=');
       expect(response.usage).toBeTruthy();
     });
   });
 
   it('should handle provider failures gracefully', async () => {
-    const prompt = 'Test prompt for failure handling';
+    const prompt = '3+3=';
     
     const result = await orchestrate({
       prompt,
@@ -191,7 +191,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should handle file attachments', async () => {
-    const prompt = 'Analyze these code files';
+    const prompt = '4+4=';
     
     const result = await orchestrate({
       prompt,
@@ -210,7 +210,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should handle file resolution with glob patterns', async () => {
-    const prompt = 'Review JavaScript files';
+    const prompt = '5+5=';
     
     const result = await orchestrate({
       prompt,
@@ -225,7 +225,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should provide cost calculation', async () => {
-    const prompt = 'Cost calculation test';
+    const prompt = '6+6=';
     
     const result = await orchestrate({
       prompt,
@@ -240,7 +240,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should handle bestOf selection', async () => {
-    const prompt = 'Find the best response';
+    const prompt = '7+7=';
     
     const result = await orchestrate({
       prompt,
@@ -260,17 +260,17 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should handle timeout scenarios', async () => {
-    // Create a very slow provider
-    const verySlowProvider = new MockProvider('very-slow-ai', 'Very Slow Provider', 2000);
+    // Create a very slow provider  
+    const verySlowProvider = new MockProvider('very-slow-ai', 'Very Slow Provider', 1000);
     (registry as any).plugins.set('very-slow-ai', verySlowProvider);
     (registry as any).enabledPlugins.add('very-slow-ai');
 
-    const prompt = 'Test timeout';
+    const prompt = '8+8=';
     
     const result = await orchestrate({
       prompt,
       models: ['fast-ai-model-1', 'very-slow-ai-model-1'],
-      timeout: 500, // 500ms timeout
+      timeout: 300, // 300ms timeout
       registry
     });
 
@@ -280,7 +280,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should handle empty model list', async () => {
-    const prompt = 'Test with no models';
+    const prompt = '9+9=';
     
     const result = await orchestrate({
       prompt,
@@ -294,7 +294,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should handle unknown models', async () => {
-    const prompt = 'Test unknown model';
+    const prompt = '10+10=';
     
     const result = await orchestrate({
       prompt,
@@ -313,7 +313,7 @@ describe('Orchestrator E2E Tests', () => {
   });
 
   it('should provide detailed metrics', async () => {
-    const prompt = 'Metrics test prompt';
+    const prompt = '11+11=';
     
     const result = await orchestrate({
       prompt,

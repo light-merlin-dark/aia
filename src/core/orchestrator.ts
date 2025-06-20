@@ -180,8 +180,15 @@ export class Orchestrator {
     // Extract the actual model name if in service/model format
     let actualModelName = model;
     if (model.includes('/')) {
-      const parts = model.split('/', 2);
-      actualModelName = parts[1];
+      const firstSlashIndex = model.indexOf('/');
+      const serviceName = model.substring(0, firstSlashIndex);
+      
+      // Only strip the service prefix if it matches the provider name
+      if (serviceName === provider.name) {
+        actualModelName = model.substring(firstSlashIndex + 1);
+      }
+      
+      this.logger.debug(`Model resolution: input="${model}", service="${serviceName}", provider="${provider.name}", output="${actualModelName}"`);
     }
     
     this.logger.debug(`Executing model ${actualModelName} with provider ${provider.name}`);
