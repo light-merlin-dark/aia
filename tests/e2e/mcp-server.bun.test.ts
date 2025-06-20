@@ -79,8 +79,8 @@ describe('MCP Server E2E Tests (Bun)', () => {
     writeFileSync(configFile, encrypted);
     
     // Start MCP server
-    const mcpServerPath = join(process.cwd(), 'src', 'mcp-server.ts');
-    mcpProcess = spawn('bun', ['run', mcpServerPath], {
+    const mcpServerPath = join(process.cwd(), 'dist', 'mcp-server.js');
+    mcpProcess = spawn('node', [mcpServerPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
@@ -753,5 +753,336 @@ describe('MCP Server E2E Tests (Bun)', () => {
     expect(doctorResponse.result).toBeDefined();
     expect(doctorResponse.result.isError).not.toBe(true);
     expect(doctorResponse.result.content[0].text).toContain('AI Advisor Diagnostics Report');
+  });
+
+  // Tests for MCP consult with configured models
+  describe('MCP Consult Model Resolution', () => {
+    beforeAll(async () => {
+      // Set up services with models for testing
+      const setupCommands = [
+        // Set up OpenAI service
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {
+            name: 'config-set',
+            arguments: {
+              service: 'openai',
+              key: 'apiKey',
+              value: 'test-openai-key'
+            }
+          },
+          id: 900
+        },
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {
+            name: 'config-set',
+            arguments: {
+              service: 'openai',
+              key: 'models',
+              value: 'o3-mini,gpt-4-turbo'
+            }
+          },
+          id: 901
+        },
+        // Set up Anthropic service
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {
+            name: 'config-set',
+            arguments: {
+              service: 'anthropic',
+              key: 'apiKey',
+              value: 'test-anthropic-key'
+            }
+          },
+          id: 902
+        },
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {
+            name: 'config-set',
+            arguments: {
+              service: 'anthropic',
+              key: 'models',
+              value: 'claude-sonnet-4-20250514'
+            }
+          },
+          id: 903
+        },
+        // Set up OpenRouter service
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {
+            name: 'config-set',
+            arguments: {
+              service: 'openrouter',
+              key: 'apiKey',
+              value: 'test-openrouter-key'
+            }
+          },
+          id: 904
+        },
+        {
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: {
+            name: 'config-set',
+            arguments: {
+              service: 'openrouter',
+              key: 'models',
+              value: 'minimax/minimax-m1'
+            }
+          },
+          id: 905
+        }
+      ];
+      
+      // Execute all setup commands
+      for (const cmd of setupCommands) {
+        await sendRequest(mcpProcess, cmd);
+      }
+    });
+    
+    test('should list available models when no model specified', async () => {
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'Test prompt',
+            models: []
+          }
+        },
+        id: 910
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result.isError).toBe(true);
+      const errorText = response.result.content[0].text;
+      expect(errorText).toContain('No models specified');
+      expect(errorText).toContain('Available models:');
+      expect(errorText).toContain('openai/o3-mini');
+      expect(errorText).toContain('openai/gpt-4-turbo');
+      expect(errorText).toContain('anthropic/claude-sonnet-4-20250514');
+      expect(errorText).toContain('openrouter/minimax/minimax-m1');
+    });
+    
+    test('should resolve model with service prefix', async () => {
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.',
+            models: ['openai/o3-mini']
+          }
+        },
+        id: 911
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      // The actual API call will fail (test keys), but model resolution should work
+      expect(response.result).toBeDefined();
+      const resultText = response.result.content[0].text;
+      const result = JSON.parse(resultText);
+      
+      // Check that the model was attempted
+      expect(result.responses).toBeDefined();
+      expect(result.responses[0].model).toBe('openai/o3-mini');
+    });
+    
+    test('should resolve bare model name when unique', async () => {
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.',
+            models: ['claude-sonnet-4-20250514'] // Unique to anthropic
+          }
+        },
+        id: 912
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result).toBeDefined();
+      const resultText = response.result.content[0].text;
+      const result = JSON.parse(resultText);
+      
+      // Check that the model was resolved to anthropic
+      expect(result.responses[0].model).toBe('anthropic/claude-sonnet-4-20250514');
+    });
+    
+    test('should fail when bare model name is ambiguous without default service', async () => {
+      // First, add the same model to multiple services to create ambiguity
+      await sendRequest(mcpProcess, {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'config-add-model',
+          arguments: {
+            service: 'openrouter',
+            model: 'gpt-4-turbo' // Also available in openai
+          }
+        },
+        id: 913
+      });
+      
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'Test prompt',
+            models: ['gpt-4-turbo'] // Ambiguous - in both openai and openrouter
+          }
+        },
+        id: 914
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result.isError).toBe(true);
+      const errorText = response.result.content[0].text;
+      expect(errorText).toContain('Failed to resolve models');
+      expect(errorText).toMatch(/gpt-4-turbo.*configured in multiple services/);
+      expect(errorText).toContain('openai');
+      expect(errorText).toContain('openrouter');
+    });
+    
+    test('should resolve ambiguous model with default service', async () => {
+      // Set default service
+      await sendRequest(mcpProcess, {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'config-set-default-service',
+          arguments: {
+            service: 'openai'
+          }
+        },
+        id: 915
+      });
+      
+      // Now the ambiguous model should resolve to openai
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.',
+            models: ['gpt-4-turbo'] // Should resolve to openai/gpt-4-turbo
+          }
+        },
+        id: 916
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result).toBeDefined();
+      const resultText = response.result.content[0].text;
+      const result = JSON.parse(resultText);
+      
+      expect(result.responses[0].model).toBe('openai/gpt-4-turbo');
+    });
+    
+    test('should fail for non-existent model', async () => {
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'Test prompt',
+            models: ['non-existent-model']
+          }
+        },
+        id: 917
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result.isError).toBe(true);
+      const errorText = response.result.content[0].text;
+      expect(errorText).toContain('Failed to resolve models');
+      expect(errorText).toContain('Model \'non-existent-model\' not found');
+    });
+    
+    test('should use default model when none specified', async () => {
+      // Set a default model
+      await sendRequest(mcpProcess, {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'config-set-default',
+          arguments: {
+            model: 'openai/o3-mini'
+          }
+        },
+        id: 918
+      });
+      
+      // Call consult without specifying models
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.'
+            // No models specified - should use default
+          }
+        },
+        id: 919
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result).toBeDefined();
+      const resultText = response.result.content[0].text;
+      const result = JSON.parse(resultText);
+      
+      expect(result.responses[0].model).toBe('openai/o3-mini');
+    });
+    
+    test('should handle multiple models in one request', async () => {
+      const consultRequest = {
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {
+          name: 'consult',
+          arguments: {
+            prompt: 'What is 2 + 2? Reply with just the number.',
+            models: ['openai/o3-mini', 'anthropic/claude-sonnet-4-20250514', 'minimax/minimax-m1']
+          }
+        },
+        id: 920
+      };
+      
+      const response = await sendRequest(mcpProcess, consultRequest);
+      
+      expect(response.result).toBeDefined();
+      const resultText = response.result.content[0].text;
+      const result = JSON.parse(resultText);
+      
+      expect(result.responses).toHaveLength(3);
+      expect(result.responses[0].model).toBe('openai/o3-mini');
+      expect(result.responses[1].model).toBe('anthropic/claude-sonnet-4-20250514');
+      expect(result.responses[2].model).toBe('openrouter/minimax/minimax-m1');
+    });
   });
 });

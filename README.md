@@ -40,6 +40,9 @@ claude mcp add-json aia '{
   "command":"aia-mcp",
   "env":{"NODE_NO_WARNINGS":"1"}
 }'
+
+# Remove and add from Claude Code
+claude mcp remove aia
 ```
 
 ### Available MCP Tools
@@ -309,11 +312,11 @@ import { AIProviderPlugin } from 'aia/types';
 const myPlugin: AIProviderPlugin = {
   name: 'my-provider',
   version: '1.0.0',
-  
+
   async listModels() {
     return ['model-1', 'model-2'];
   },
-  
+
   async execute(model, prompt, options) {
     // Your API integration here
     return {
@@ -321,11 +324,11 @@ const myPlugin: AIProviderPlugin = {
       metadata: { tokensUsed: 100 }
     };
   },
-  
+
   validateConfig(config) {
     return !!config.apiKey;
   },
-  
+
   getRequiredEnvVars() {
     return ['MY_PROVIDER_API_KEY'];
   }

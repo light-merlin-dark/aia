@@ -11,6 +11,7 @@ import { FileResolver } from "./services/file-resolver.js";
 import { mkdirSync, appendFileSync, writeFileSync } from "fs";
 import { join, dirname, resolve, isAbsolute } from "path";
 import { homedir } from "os";
+import { ModelResolver } from "./utils/model-resolver.js";
 
 // Initialize logger and file logging
 const logger = createLogger('MCP-Server');
@@ -205,9 +206,9 @@ async function main() {
         logToFile('DEBUG', 'Consult tool invoked with:', { prompt, files, models, bestOf, output });
         
         // Use configured default model if none specified
-        const targetModels = models && models.length > 0 ? models : [];
+        let targetModels = models && models.length > 0 ? models : ModelResolver.getDefaultModels(config);
         
-        // If no models specified, throw an error
+        // If still no models specified, throw an error
         if (targetModels.length === 0) {
           const availableServices = Object.keys(config.services).filter(s => s !== 'default');
           const serviceModels: string[] = [];
@@ -226,6 +227,19 @@ async function main() {
             `Usage: { "models": ["model-name"] }`
           );
         }
+        
+        // Resolve model names to service/model format
+        const { resolved, errors } = await ModelResolver.resolveModels(targetModels, config);
+        
+        if (errors.length > 0) {
+          throw new Error(
+            `Failed to resolve models:\n` +
+            errors.map(e => `- ${e.model}: ${e.error}`).join('\n')
+          );
+        }
+        
+        // Update targetModels to use fully qualified names
+        targetModels = resolved.map(r => r.fullName);
         
         // Validate that models are not service names
         const serviceNames = Object.keys(config.services).filter(s => s !== 'default');
@@ -480,6 +494,61 @@ async function main() {
             content: [{
               type: "text" as const,
               text: `Error setting default model: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-set-default-service tool
+    server.tool(
+      "config-set-default-service",
+      "Set the default service to use when resolving bare model names",
+      {
+        service: z.string().describe("The service to set as default (e.g., 'openai', 'anthropic', 'openrouter')")
+      },
+      async ({ service }) => {
+        try {
+          const config = await configManager.getConfig();
+          
+          // Verify service exists
+          if (!config.services[service]) {
+            return {
+              isError: true,
+              content: [{
+                type: "text" as const,
+                text: `Service '${service}' not found. Available services: ${Object.keys(config.services).filter(s => s !== 'default').join(', ')}`
+              }]
+            };
+          }
+          
+          (config as any).defaultService = service;
+          
+          // If service has only one model, also set it as default model
+          const serviceConfig = config.services[service];
+          if (serviceConfig.models && serviceConfig.models.length === 1) {
+            config.defaultModel = `${service}/${serviceConfig.models[0]}`;
+          }
+          
+          await configManager.saveConfig(config);
+          
+          let message = `Successfully set default service to ${service}`;
+          if (config.defaultModel) {
+            message += `\nAlso set default model to ${config.defaultModel} (only model in service)`;
+          }
+          
+          return {
+            content: [{
+              type: "text" as const,
+              text: message
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error setting default service: ${error.message}`
             }]
           };
         }

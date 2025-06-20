@@ -10,6 +10,7 @@ import { configAddModelCommand } from './config-add-model';
 import { configSetDefaultCommand } from './config-set-default';
 import { configRemoveCommand } from './config-remove';
 import configClearDefaultCommand from './config-clear-default';
+import { command as configSetDefaultServiceCommand } from './config-set-default-service';
 
 export const commands: Record<string, CommandSpec> = {
   consult: consultCommand,
@@ -24,6 +25,7 @@ export const commands: Record<string, CommandSpec> = {
   'config-list': configListCommand,
   'config-add-model': configAddModelCommand,
   'config-set-default': configSetDefaultCommand,
+  'config-set-default-service': configSetDefaultServiceCommand,
   'config-clear-default': configClearDefaultCommand,
   'config-remove': configRemoveCommand,
 };

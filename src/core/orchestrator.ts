@@ -153,14 +153,15 @@ export class Orchestrator {
         );
       }
       
-      // List available models from all enabled providers
+      // Get available models from configuration
+      const config = await getConfig();
       const availableModels: string[] = [];
-      for (const plugin of allPlugins) {
-        if ('listModels' in plugin && typeof plugin.listModels === 'function') {
-          const models = plugin.listModels();
-          if (models.length > 0) {
-            availableModels.push(`${plugin.name}: ${models.join(', ')}`);
-          }
+      const services = Object.keys(config.services).filter(s => s !== 'default');
+      
+      for (const service of services) {
+        const serviceConfig = config.services[service];
+        if (serviceConfig.models && serviceConfig.models.length > 0) {
+          availableModels.push(...serviceConfig.models.map(m => `${service}/${m}`));
         }
       }
       
@@ -176,7 +177,14 @@ export class Orchestrator {
       throw new Error(errorMsg);
     }
     
-    this.logger.debug(`Executing model ${model} with provider ${provider.name}`);
+    // Extract the actual model name if in service/model format
+    let actualModelName = model;
+    if (model.includes('/')) {
+      const parts = model.split('/', 2);
+      actualModelName = parts[1];
+    }
+    
+    this.logger.debug(`Executing model ${actualModelName} with provider ${provider.name}`);
     
     // Use p-retry for automatic retries with exponential backoff
     return pRetry(
@@ -186,7 +194,7 @@ export class Orchestrator {
         
         try {
           const response = await provider.execute({
-            model,
+            model: actualModelName,
             prompt,
             timeout,
             retryAttempts: 0 // Let p-retry handle retries

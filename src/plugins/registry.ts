@@ -146,19 +146,36 @@ export class PluginRegistry implements IPluginRegistry {
   }
   
   getAIProvider(nameOrModel: string): AIProviderPlugin | undefined {
+    // Handle service/model format
+    if (nameOrModel.includes('/')) {
+      const [serviceName, modelName] = nameOrModel.split('/', 2);
+      const plugin = this.plugins.get(serviceName);
+      
+      if (plugin && this.isAIProvider(plugin) && this.enabledPlugins.has(serviceName)) {
+        const aiPlugin = plugin as AIProviderPlugin;
+        
+        // Check if the model is configured for this service
+        const serviceConfig = this.context.config?.services?.[serviceName];
+        if (serviceConfig?.models?.includes(modelName)) {
+          return aiPlugin;
+        }
+      }
+      
+      return undefined;
+    }
+    
     // First try direct plugin name
     const directPlugin = this.plugins.get(nameOrModel);
     if (directPlugin && this.isAIProvider(directPlugin) && this.enabledPlugins.has(nameOrModel)) {
       return directPlugin as AIProviderPlugin;
     }
     
-    // Then try to find by model
+    // Then try to find by model in configured services
     for (const [pluginName, plugin] of this.plugins) {
       if (this.isAIProvider(plugin) && this.enabledPlugins.has(pluginName)) {
-        const aiPlugin = plugin as AIProviderPlugin;
-        if (aiPlugin.isModelAvailable?.(nameOrModel) || 
-            aiPlugin.listModels().includes(nameOrModel)) {
-          return aiPlugin;
+        const serviceConfig = this.context.config?.services?.[pluginName];
+        if (serviceConfig?.models?.includes(nameOrModel)) {
+          return plugin as AIProviderPlugin;
         }
       }
     }
