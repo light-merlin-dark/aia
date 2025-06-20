@@ -118,11 +118,45 @@ export class ConfigManager {
     try {
       const encrypted = readFileSync(this.CONFIG_FILE, 'utf-8');
       const decrypted = await decrypt(encrypted, this.KEY_FILE);
-      return JSON.parse(decrypted);
+      const config = JSON.parse(decrypted);
+      
+      // Run migrations to ensure config is up to date
+      return this.migrateConfig(config);
     } catch (error) {
       this.logger.error('Failed to load config:', error);
       throw new Error('Failed to decrypt configuration. Config may be corrupted.');
     }
+  }
+  
+  private migrateConfig(config: AIAdvisorConfig): AIAdvisorConfig {
+    let migrated = false;
+    
+    // Ensure each service has a models array
+    for (const [service, serviceConfig] of Object.entries(config.services)) {
+      if (service !== 'default' && !serviceConfig.models) {
+        // Infer model based on service name if models array is missing
+        const defaultModels: Record<string, string[]> = {
+          openai: ['gpt-4-turbo'],
+          anthropic: ['claude-3-opus-20240229'],
+          openrouter: ['gpt-4-turbo']
+        };
+        
+        serviceConfig.models = defaultModels[service] || [];
+        migrated = true;
+        this.logger.info(`Migrated ${service} config: added default models array`);
+      }
+    }
+    
+    // If we migrated anything, save the updated config
+    if (migrated) {
+      this.config = config;
+      // Don't await here to avoid recursion
+      this.saveConfig().catch(err => 
+        this.logger.error('Failed to save migrated config:', err)
+      );
+    }
+    
+    return config;
   }
   
   private async createConfig(): Promise<AIAdvisorConfig> {
