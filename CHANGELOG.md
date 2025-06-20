@@ -5,6 +5,38 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.2] - 2025-06-20
+
+### Fixed
+- **Doctor Command Path Resolution**
+  - Fixed error when running `doctor` command from different directories
+  - Now correctly finds package.json relative to MCP server installation
+  - Changed "Working Directory" to "User Directory" for clarity
+  - Gracefully handles missing package.json files
+
+## [0.8.1] - 2025-06-20
+
+### Added
+- **Enhanced Model/Service Resolution**
+  - Clear, actionable error messages when models or services not found
+  - Intelligent detection when service name is used instead of model
+  - Lists available models and provides configuration guidance
+  - Better handling of default service model selection
+
+### Changed
+- **Improved Default Service Logic**
+  - When no models specified, uses first model from default service
+  - Better error messages for misconfigured default service
+  - Early validation to catch service names being used as models
+
+### Fixed
+- **Plugin Registry**
+  - Fixed warning about trying to enable "default" as a plugin
+  - Registry now correctly skips "default" service during initialization
+- **Anthropic Plugin**
+  - Updated to read models from live configuration
+  - Added support for Claude 4 model shorthand mappings
+
 ## [0.8.0] - 2025-06-20
 
 ### Added

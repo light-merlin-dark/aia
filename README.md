@@ -22,8 +22,8 @@ Query multiple AI models at once:
 
 ### Plugin Architecture
 Extend AIA with provider plugins:
-- **OpenAI Plugin**: GPT-4, GPT-3.5-turbo, O3, and more
-- **Anthropic Plugin**: Claude-3-Opus, Claude-3-Sonnet models
+- **OpenAI Plugin**: O3-mini, GPT-4, GPT-3.5-turbo, and more
+- **Anthropic Plugin**: Claude Sonnet 4, Claude Opus 4, Claude 3 models
 - **OpenRouter Plugin**: Access to 50+ models through one API
 - **Custom Plugins**: Build your own for specific AI services
 
@@ -32,7 +32,7 @@ Extend AIA with provider plugins:
 ### Quick Start with Claude Code
 ```bash
 # Install AIA globally
-npm install -g aia
+npm install -g @light-merlin-dark/aia
 
 # Add to Claude Code
 claude mcp add-json aia '{
@@ -90,24 +90,24 @@ Once configured, AI agents gain access to powerful tools:
 {
   "responses": [
     {
-      "model": "gpt-4-turbo",
+      "model": "o3-mini",
+      "provider": "openai",
       "content": "...",
       "usage": {
         "promptTokens": 150,
         "completionTokens": 350,
         "totalTokens": 500
-      },
-      "metadata": {}
+      }
     },
     {
-      "model": "claude-3-opus",
+      "model": "claude-sonnet-4-20250514",
+      "provider": "anthropic",
       "content": "...",
       "usage": {
         "promptTokens": 150,
         "completionTokens": 425,
         "totalTokens": 575
-      },
-      "metadata": {}
+      }
     }
   ],
   "failed": [],
@@ -115,16 +115,19 @@ Once configured, AI agents gain access to powerful tools:
   "bestIndex": 0,  // Only if bestOf=true
   "costs": [
     {
-      "model": "gpt-4-turbo",
-      "provider": "openai",
-      "inputTokens": 150,
-      "outputTokens": 350,
-      "inputCost": 0.0015,
-      "outputCost": 0.0105,
-      "totalCost": 0.012
+      "model": "o3-mini",
+      "promptCost": 0.000165,
+      "completionCost": 0.00154,
+      "totalCost": 0.001705
+    },
+    {
+      "model": "claude-sonnet-4-20250514",
+      "promptCost": 0.00045,
+      "completionCost": 0.006375,
+      "totalCost": 0.006825
     }
   ],
-  "totalCost": 0.025  // Sum of all model costs
+  "totalCost": 0.00853
 }
 ```
 
@@ -186,7 +189,7 @@ The streamlined setup will:
 
 ```bash
 # Install globally via npm
-npm install -g aia
+npm install -g @light-merlin-dark/aia
 
 # First run launches setup automatically
 aia consult "Hello AI!"
@@ -292,8 +295,8 @@ AIA features a powerful plugin architecture for AI provider integration.
 
 ### Built-in Plugins
 
-- **OpenAI**: Access to GPT-4, GPT-4 Turbo, GPT-3.5-turbo, O3
-- **Anthropic**: Claude-3-Opus, Claude-3-Sonnet, Claude-3-Haiku
+- **OpenAI**: Access to O3-mini, GPT-4, GPT-4 Turbo, GPT-3.5-turbo
+- **Anthropic**: Claude Sonnet 4, Claude Opus 4, Claude 3 models
 - **OpenRouter**: Gateway to 50+ models with automatic routing
 
 ### Plugin Development
@@ -370,14 +373,26 @@ Configuration is stored encrypted in `~/.aia/config.enc`:
   "services": {
     "openai": {
       "apiKey": "sk-...",
-      "models": ["gpt-4-turbo", "gpt-3.5-turbo", "o3"]
+      "models": ["o3-mini"],
+      "pricing": {
+        "o3-mini": {
+          "inputCostPerMillion": 1.1,
+          "outputCostPerMillion": 4.4
+        }
+      }
     },
     "anthropic": {
       "apiKey": "sk-ant-...",
-      "models": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"]
+      "models": ["claude-sonnet-4-20250514"],
+      "pricing": {
+        "claude-sonnet-4-20250514": {
+          "inputCostPerMillion": 3,
+          "outputCostPerMillion": 15
+        }
+      }
     },
     "default": {
-      "service": "openai"  // Default service when no models specified
+      "service": "anthropic"  // Default service when no models specified
     }
   },
   "maxRetries": 2,
@@ -414,8 +429,8 @@ Optimized for speed and efficiency:
 
 ```bash
 # Clone the repository
-git clone https://github.com/light-merlin-dark/aia.git
-cd aia
+git clone https://github.com/light-merlin-dark/ai-advisor.git
+cd ai-advisor
 
 # Install dependencies
 make install
