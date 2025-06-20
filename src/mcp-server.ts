@@ -205,7 +205,7 @@ async function main() {
         logToFile('DEBUG', 'Consult tool invoked with:', { prompt, files, models, bestOf, output });
         
         // Use configured default model if none specified
-        let targetModels = models && models.length > 0 ? models : [];
+        const targetModels = models && models.length > 0 ? models : [];
         
         // If no models specified, throw an error
         if (targetModels.length === 0) {
