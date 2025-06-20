@@ -78,12 +78,20 @@ class OpenAIPlugin implements AIProviderPlugin {
       
       messages.push({ role: 'user', content: options.prompt });
 
-      const completion = await this.client.chat.completions.create({
+      // Build request parameters
+      const params: any = {
         model: options.model,
         messages,
-        temperature: options.temperature ?? 0.7,
         max_tokens: options.maxTokens,
-      });
+      };
+
+      // Only add temperature if the model supports it
+      // o3-mini doesn't support temperature parameter
+      if (options.model !== 'o3-mini') {
+        params.temperature = options.temperature ?? 0.7;
+      }
+
+      const completion = await this.client.chat.completions.create(params);
 
       const response = completion.choices[0];
       const usage = completion.usage;
