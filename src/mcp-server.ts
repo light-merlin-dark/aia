@@ -871,9 +871,21 @@ async function main() {
       async () => {
         try {
           const { readFileSync, existsSync } = await import('fs');
-          const { join } = await import('path');
+          const { join, dirname } = await import('path');
           const { homedir, platform, release } = await import('os');
-          const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
+          const { fileURLToPath } = await import('url');
+          
+          // Find package.json relative to this file
+          const __filename = fileURLToPath(import.meta.url);
+          const __dirname = dirname(__filename);
+          const packageJsonPath = join(__dirname, '..', 'package.json');
+          
+          let packageJson = { version: 'unknown' };
+          try {
+            packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+          } catch (err) {
+            // If we can't find package.json, continue with unknown version
+          }
           
           let diagnostic = "🏥 AI Advisor Diagnostics Report\n";
           diagnostic += "=" .repeat(50) + "\n\n";
@@ -884,7 +896,7 @@ async function main() {
           diagnostic += `Version: ${packageJson.version}\n`;
           diagnostic += `Platform: ${platform()} ${release()}\n`;
           diagnostic += `Node Version: ${process.version}\n`;
-          diagnostic += `Working Directory: ${process.cwd()}\n`;
+          diagnostic += `User Directory: ${process.cwd()}\n`;
           diagnostic += `Config Directory: ${join(homedir(), '.aia')}\n`;
           diagnostic += `Date: ${new Date().toISOString()}\n\n`;
           
