@@ -67,8 +67,8 @@ describe('AI Advisor E2E Tests', () => {
     registry = new PluginRegistry();
     
     // Create mock providers
-    const openaiMock = new MockAIProvider('openai', ['gpt-3.5-turbo', 'gpt-4']);
-    const anthropicMock = new MockAIProvider('anthropic', ['claude-3-haiku-20240307', 'claude-3-opus-20240229']);
+    const openaiMock = new MockAIProvider('openai', ['test-model-1', 'test-model-2']);
+    const anthropicMock = new MockAIProvider('anthropic', ['test-model-3', 'test-model-4']);
     
     // Register mock providers
     (registry as any).plugins.set('openai', openaiMock);
@@ -83,14 +83,14 @@ describe('AI Advisor E2E Tests', () => {
     // Use a single model to minimize costs
     const result = await orchestrate({
       prompt,
-      models: ['gpt-3.5-turbo'], // Using cheaper model for tests
+      models: ['test-model-1'], // Using cheaper model for tests
       registry
     });
     
     // Verify response structure
     expect(result.responses).toHaveLength(1);
     expect(result.failed).toHaveLength(0);
-    expect(result.responses[0].model).toBe('gpt-3.5-turbo');
+    expect(result.responses[0].model).toBe('test-model-1');
     expect(result.responses[0].provider).toBe('openai');
     expect(result.responses[0].content).toBeTruthy();
     expect(result.responses[0].isError).toBeUndefined();
@@ -105,7 +105,7 @@ describe('AI Advisor E2E Tests', () => {
     // Test with multiple models (keep costs low)
     const result = await orchestrate({
       prompt,
-      models: ['gpt-3.5-turbo', 'claude-3-haiku-20240307'],
+      models: ['test-model-1', 'test-model-3'],
       registry
     });
     
@@ -133,7 +133,7 @@ describe('AI Advisor E2E Tests', () => {
     const result = await orchestrate({
       prompt,
       files: ['tests/data/sample_code.py'],
-      models: ['gpt-3.5-turbo'],
+      models: ['test-model-1'],
       registry
     });
     

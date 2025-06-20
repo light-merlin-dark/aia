@@ -110,12 +110,12 @@ describe('OpenAI Plugin', () => {
       });
 
       const response = await plugin.execute({
-        model: 'gpt-4',
+        model: 'test-model',
         prompt: 'Test prompt'
       });
 
       expect(response.content).toBe('Test response');
-      expect(response.model).toBe('gpt-4');
+      expect(response.model).toBe('test-model');
       expect(response.provider).toBe('openai');
       expect(response.usage).toEqual({
         promptTokens: 10,
@@ -135,7 +135,7 @@ describe('OpenAI Plugin', () => {
       });
 
       await plugin.execute({
-        model: 'gpt-4',
+        model: 'test-model',
         prompt: 'Test prompt',
         systemPrompt: 'You are a helpful assistant'
       });
@@ -156,7 +156,7 @@ describe('OpenAI Plugin', () => {
       mockCreate.mockRejectedValueOnce(new Error('API Error'));
 
       const response = await plugin.execute({
-        model: 'gpt-4',
+        model: 'test-model',
         prompt: 'Test prompt'
       });
 
@@ -188,9 +188,9 @@ describe('OpenAI Plugin', () => {
 
   describe('isModelAvailable', () => {
     it('should return false for any model by default (no models configured)', () => {
-      expect(plugin.isModelAvailable('gpt-4')).toBe(false);
-      expect(plugin.isModelAvailable('gpt-3.5-turbo')).toBe(false);
-      expect(plugin.isModelAvailable('gpt-5')).toBe(false);
+      expect(plugin.isModelAvailable('test-model-1')).toBe(false);
+      expect(plugin.isModelAvailable('test-model-2')).toBe(false);
+      expect(plugin.isModelAvailable('test-model-3')).toBe(false);
       expect(plugin.isModelAvailable('invalid-model')).toBe(false);
     });
   });

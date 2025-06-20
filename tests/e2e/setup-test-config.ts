@@ -22,11 +22,11 @@ export async function setupTestConfig() {
     services: {
       openai: {
         apiKey: process.env.OPENAI_API_KEY || 'test-key',
-        models: ['gpt-3.5-turbo', 'gpt-4-turbo']
+        models: []
       },
       anthropic: {
         apiKey: process.env.ANTHROPIC_API_KEY || 'test-key',
-        models: ['claude-3-haiku-20240307', 'claude-3-opus-20240229']
+        models: []
       },
       openrouter: {
         apiKey: process.env.OPENROUTER_API_KEY || 'test-key',

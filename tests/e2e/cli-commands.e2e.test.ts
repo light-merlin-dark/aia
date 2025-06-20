@@ -58,13 +58,13 @@ describe('CLI Commands E2E Tests', () => {
   });
 
   it('should route consult command with options', async () => {
-    const args = ['consult', '--models', 'gpt-3.5-turbo', '--files', 'test.js', 'What does this code do?'];
+    const args = ['consult', '--models', 'test-model', '--files', 'test.js', 'What does this code do?'];
     const result = await router.route(args, mockContext);
 
     expect(result.success).toBe(true);
     expect(result.message).toContain('Mock consult executed');
     expect(result.message).toContain('models');
-    expect(result.message).toContain('gpt-3.5-turbo');
+    expect(result.message).toContain('test-model');
     expect(result.message).toContain('files');
     expect(result.message).toContain('test.js');
   });

@@ -186,7 +186,7 @@ describe('MCP Server E2E Tests (Bun)', () => {
         name: 'consult',
         arguments: {
           prompt: 'What is 2 + 2? Reply with just the number.',
-          models: ['gpt-3.5-turbo']
+          models: ['test-model']
         }
       },
       id: 3
@@ -207,7 +207,7 @@ describe('MCP Server E2E Tests (Bun)', () => {
         name: 'consult',
         arguments: {
           // Missing prompt
-          models: ['gpt-3.5-turbo']
+          models: ['test-model']
         }
       },
       id: 4

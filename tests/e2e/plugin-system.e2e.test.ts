@@ -22,7 +22,7 @@ describe('Plugin System E2E Tests', () => {
         },
         anthropic: {
           apiKey: 'test-anthropic-key',
-          models: ['claude-3-haiku-20240307']
+          models: ['test-model-2']
         },
         openrouter: {
           apiKey: 'test-openrouter-key',
@@ -48,7 +48,7 @@ describe('Plugin System E2E Tests', () => {
       services: {
         openai: {
           apiKey: 'valid-api-key',
-          models: ['gpt-3.5-turbo']
+          models: ['test-model']
         }
       }
     };
@@ -71,8 +71,8 @@ describe('Plugin System E2E Tests', () => {
   it('should provide plugin metadata and models', async () => {
     const mockConfig = {
       services: {
-        openai: { apiKey: 'test-key' },
-        anthropic: { apiKey: 'test-key' }
+        openai: { apiKey: 'test-key', models: ['test-model-1', 'test-model-2'] },
+        anthropic: { apiKey: 'test-key', models: ['test-model-3'] }
       }
     };
 
@@ -93,11 +93,12 @@ describe('Plugin System E2E Tests', () => {
       // Test model listing
       const models = aiPlugin.listModels();
       expect(Array.isArray(models)).toBe(true);
-      expect(models.length).toBeGreaterThan(0);
-      expect(models).toContain('gpt-3.5-turbo');
+      expect(models.length).toBe(2);
+      expect(models).toContain('test-model-1');
+      expect(models).toContain('test-model-2');
 
       // Test model availability
-      expect(aiPlugin.isModelAvailable('gpt-3.5-turbo')).toBe(true);
+      expect(aiPlugin.isModelAvailable('test-model-1')).toBe(true);
       expect(aiPlugin.isModelAvailable('definitely-not-a-model')).toBe(false);
 
       // Test required environment variables
@@ -117,8 +118,8 @@ describe('Plugin System E2E Tests', () => {
       const aiPlugin = anthropicPlugin as any;
       
       const models = aiPlugin.listModels();
-      expect(models.length).toBeGreaterThan(0);
-      expect(models.some((m: string) => m.includes('claude'))).toBe(true);
+      expect(models.length).toBe(1);
+      expect(models).toContain('test-model-3');
 
       const envVars = aiPlugin.getRequiredEnvVars();
       expect(envVars).toContain('ANTHROPIC_API_KEY');
@@ -153,7 +154,7 @@ describe('Plugin System E2E Tests', () => {
       services: {
         openai: {
           apiKey: 'test-key',
-          models: ['gpt-3.5-turbo']
+          models: ['test-model']
         }
       }
     };
@@ -211,11 +212,11 @@ describe('Plugin System E2E Tests', () => {
       services: {
         openai: {
           apiKey: 'valid-key',
-          models: ['gpt-3.5-turbo']
+          models: ['test-model']
         },
         anthropic: {
           // Missing API key - plugin should still load but may not be fully functional
-          models: ['claude-3-haiku-20240307']
+          models: ['test-model-2']
         }
       }
     };
@@ -234,9 +235,9 @@ describe('Plugin System E2E Tests', () => {
   it('should provide consistent plugin interface', async () => {
     const mockConfig = {
       services: {
-        openai: { apiKey: 'test' },
-        anthropic: { apiKey: 'test' },
-        openrouter: { apiKey: 'test' }
+        openai: { apiKey: 'test', models: ['test-model'] },
+        anthropic: { apiKey: 'test', models: ['test-model'] },
+        openrouter: { apiKey: 'test', models: ['test-model'] }
       }
     };
 

@@ -32,7 +32,7 @@ Arguments:
   prompt              The prompt to send to the AI models (optional - can use stdin)
 
 Options:
-  -m, --models        Specific models to consult (default: configured default models)
+  -m, --models        Models to consult (required)
   -f, --files         Files to attach to the prompt
   -d, --dirs          Directories to attach (recursive)
   --json              Output raw JSON response
@@ -41,16 +41,16 @@ Options:
 
 Examples:
   # Single model consultation
-  aia consult "Explain this code" -f src/index.ts
+  aia consult "Explain this code" -m model-name -f src/index.ts
 
   # Multi-model consultation
-  aia consult "Design a caching strategy" -m gpt-4 claude-3-opus
+  aia consult "Design a caching strategy" -m model1,model2
 
   # Best-of selection
-  aia consult "Complex question" -m gpt-4 claude-3 --best-of
+  aia consult "Complex question" -m model1,model2 --best-of
 
   # Using stdin
-  echo "What is this?" | aia consult -f image.png`,
+  echo "What is this?" | aia consult -m model-name -f image.png`,
 
   arguments: [
     {
@@ -138,26 +138,25 @@ Examples:
         }
       }
 
-      // Use default models if none specified
+      // Require models to be specified
       if (models.length === 0) {
-        // Check if we have a default service configured
-        const defaultService = config.services?.default?.service;
-        if (defaultService && config.services[defaultService]?.models) {
-          models = config.services[defaultService].models;
-          if (verbose) {
-            logger.info(`Using models from default service '${defaultService}':`, models);
+        const availableServices = Object.keys(config.services).filter(s => s !== 'default');
+        const serviceModels: string[] = [];
+        
+        // Collect all available models
+        for (const service of availableServices) {
+          const svcConfig = config.services[service];
+          if (svcConfig.models && svcConfig.models.length > 0) {
+            serviceModels.push(...svcConfig.models.map(m => `${service}/${m}`));
           }
-        } else {
-          // Fall back to legacy defaultModels/defaultModel
-          models = config.defaultModels || (config.defaultModel ? [config.defaultModel] : []);
         }
         
-        if (models.length === 0) {
-          return {
-            success: false,
-            message: 'No models specified and no default service configured. Run "aia config wizard" to set up.'
-          };
-        }
+        return {
+          success: false,
+          message: `No models specified. You must specify at least one model using -m or --models.\n` +
+                   `Available models:\n${serviceModels.map(m => `  ${m}`).join('\n')}\n` +
+                   `Example: aia consult "your prompt" -m model-name`
+        };
       }
 
       // Parse files and directories

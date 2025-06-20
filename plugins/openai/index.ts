@@ -28,11 +28,7 @@ class OpenAIPlugin implements AIProviderPlugin {
   
   mcpContext = {
     section: 'OpenAI Models',
-    models: [
-      { name: 'gpt-4-turbo', description: 'Latest GPT-4 Turbo with vision' },
-      { name: 'gpt-4', description: 'GPT-4 base model' },
-      { name: 'gpt-3.5-turbo', description: 'Fast and efficient GPT-3.5' },
-    ]
+    models: []
   };
 
   async onLoad(context: PluginContext): Promise<void> {

@@ -109,12 +109,12 @@ describe('Anthropic Plugin', () => {
       });
 
       const response = await plugin.execute({
-        model: 'claude-3-opus-20240229',
+        model: 'test-model',
         prompt: 'Test prompt'
       });
 
       expect(response.content).toBe('Test response line 1\nTest response line 2');
-      expect(response.model).toBe('claude-3-opus-20240229');
+      expect(response.model).toBe('test-model');
       expect(response.provider).toBe('anthropic');
       expect(response.usage).toEqual({
         promptTokens: 10,
@@ -155,7 +155,7 @@ describe('Anthropic Plugin', () => {
       mockCreate.mockRejectedValueOnce(error);
 
       const response = await plugin.execute({
-        model: 'claude-3-opus-20240229',
+        model: 'test-model',
         prompt: 'Test prompt'
       });
 
@@ -175,7 +175,7 @@ describe('Anthropic Plugin', () => {
       });
 
       await plugin.execute({
-        model: 'claude-3-opus-20240229',
+        model: 'test-model',
         prompt: 'Test prompt'
       });
 

@@ -28,11 +28,7 @@ class AnthropicPlugin implements AIProviderPlugin {
   
   mcpContext = {
     section: 'Anthropic Models',
-    models: [
-      { name: 'claude-3-opus', description: 'Most capable Claude 3 model' },
-      { name: 'claude-3-sonnet', description: 'Balanced Claude 3 model' },
-      { name: 'claude-3-haiku', description: 'Fast and efficient Claude 3' },
-    ]
+    models: []
   };
 
   async onLoad(context: PluginContext): Promise<void> {
