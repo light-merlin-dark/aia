@@ -43,12 +43,45 @@ claude mcp add-json aia '{
 ```
 
 ### Available MCP Tools
-Once configured, AI agents gain access to:
+Once configured, AI agents gain access to powerful tools:
+
+#### Core AI Tools
 - `consult` - Query one or more AI models with optional file attachments
   - Supports parallel model consultation
   - File and directory attachment for context
   - Optional best-of selection mode
-  - JSON-structured responses for agent consumption
+  - JSON-structured responses with cost tracking
+
+#### Configuration Management
+- `config-list` - View all configuration (with masked secrets)
+- `config-get` - Get configuration for specific services
+- `config-set` - Set configuration values
+- `config-remove` - Remove services from configuration
+
+#### Model & Pricing Management
+- `config-add-model` - Add models to services
+- `config-set-default` - Set default model
+- `config-clear-default` - Clear default model
+- `config-set-pricing` - Configure input/output costs per model
+- `config-get-pricing` - View pricing information
+- `config-remove-pricing` - Remove pricing configuration
+
+#### Backup & Recovery
+- `config-backup` - Backup configuration with optional name
+- `config-restore` - Restore from backup
+- `config-list-backups` - List available backups
+- `config-clear` - Clear all configuration (with confirmation)
+
+#### Diagnostics & Logs
+- `config-view-logs` - View server logs with filtering
+  - Filter by log level (ERROR, WARN, INFO, DEBUG)
+  - Search for specific text
+  - View logs from specific dates
+  - Control number of lines returned
+- `doctor` - Comprehensive system diagnostics
+  - System information and health checks
+  - Configuration overview with recommendations
+  - Plugin status and recent log summary
 
 ## ✨ Key Features
 
@@ -204,9 +237,9 @@ aia reset --force  # Skip confirmation
 
 ### MCP Usage
 
-The AI Advisor MCP server exposes the `consult` tool for AI agents to query multiple models in parallel.
+The AI Advisor MCP server provides comprehensive tools for AI consultation and system management.
 
-**Quick Example:**
+**Core Consultation:**
 ```json
 {
   "prompt": "Review this code for security issues",
@@ -216,20 +249,40 @@ The AI Advisor MCP server exposes the `consult` tool for AI agents to query mult
 }
 ```
 
+**Configuration Management:**
+```json
+{
+  "service": "openai",
+  "model": "gpt-4",
+  "inputCost": 10,
+  "outputCost": 30
+}
+```
+
+**System Diagnostics:**
+```json
+{
+  "lines": 100,
+  "level": "ERROR",
+  "search": "timeout"
+}
+```
+
 **Key Features:**
 - Query multiple AI models in parallel
+- Complete configuration management
+- Real-time cost tracking with custom pricing
+- Advanced log viewing and search
+- Comprehensive system diagnostics
+- Backup and recovery operations
 - Automatic retry and failover
-- File context support with wildcards
-- Cost tracking for all queries
-- Save responses to files
-- Best response selection
 
 **Common Use Cases:**
 - Code reviews and security audits
-- Architecture decisions
-- Debugging assistance
-- Test generation
-- Documentation creation
+- Architecture decisions with cost analysis
+- System troubleshooting and log analysis
+- Configuration management and backup
+- Multi-model performance comparison
 
 For comprehensive usage examples and best practices, see the [MCP Usage Guide](docs/mcp-usage-guide.md).
 

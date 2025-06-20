@@ -309,4 +309,449 @@ describe('MCP Server E2E Tests (Bun)', () => {
     expect(verifyRemovedResponse.result.isError).toBe(true);
     expect(verifyRemovedResponse.result.content[0].text).toMatch(/testservice.*not found/i);
   });
+
+  test('should successfully manage pricing configuration via MCP tools', async () => {
+    const testService = 'openai'; // Using existing service
+    const testModel = 'gpt-4-turbo';
+    const inputCost = 10;
+    const outputCost = 30;
+    
+    // Step 1: Set pricing for a model
+    const setPricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-set-pricing',
+        arguments: {
+          service: testService,
+          model: testModel,
+          inputCost: inputCost,
+          outputCost: outputCost
+        }
+      },
+      id: 201
+    });
+    
+    expect(setPricingResponse.result.content[0].text).toContain(`Successfully set pricing for ${testService}/${testModel}`);
+    expect(setPricingResponse.result.content[0].text).toContain(`Input: $${inputCost}/M tokens`);
+    expect(setPricingResponse.result.content[0].text).toContain(`Output: $${outputCost}/M tokens`);
+    
+    // Step 2: Get pricing for specific model
+    const getSpecificPricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-get-pricing',
+        arguments: {
+          service: testService,
+          model: testModel
+        }
+      },
+      id: 202
+    });
+    
+    expect(getSpecificPricingResponse.result.content[0].text).toContain(`Pricing for ${testService}/${testModel}`);
+    expect(getSpecificPricingResponse.result.content[0].text).toContain(`Input: $${inputCost}/M tokens`);
+    expect(getSpecificPricingResponse.result.content[0].text).toContain(`Output: $${outputCost}/M tokens`);
+    
+    // Step 3: Get all pricing for service
+    const getAllPricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-get-pricing',
+        arguments: {
+          service: testService
+        }
+      },
+      id: 203
+    });
+    
+    expect(getAllPricingResponse.result.content[0].text).toContain(`Pricing for ${testService}:`);
+    expect(getAllPricingResponse.result.content[0].text).toContain(testModel);
+    expect(getAllPricingResponse.result.content[0].text).toContain(`Input: $${inputCost}/M tokens`);
+    
+    // Step 4: Update pricing with new values
+    const newInputCost = 15;
+    const newOutputCost = 45;
+    
+    const updatePricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-set-pricing',
+        arguments: {
+          service: testService,
+          model: testModel,
+          inputCost: newInputCost,
+          outputCost: newOutputCost
+        }
+      },
+      id: 204
+    });
+    
+    expect(updatePricingResponse.result.content[0].text).toContain(`Successfully set pricing for ${testService}/${testModel}`);
+    expect(updatePricingResponse.result.content[0].text).toContain(`Input: $${newInputCost}/M tokens`);
+    
+    // Step 5: Remove pricing
+    const removePricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-remove-pricing',
+        arguments: {
+          service: testService,
+          model: testModel
+        }
+      },
+      id: 205
+    });
+    
+    expect(removePricingResponse.result.content[0].text).toContain(`Successfully removed pricing for ${testService}/${testModel}`);
+    
+    // Step 6: Verify pricing is removed
+    const verifyRemovedPricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-get-pricing',
+        arguments: {
+          service: testService,
+          model: testModel
+        }
+      },
+      id: 206
+    });
+    
+    expect(verifyRemovedPricingResponse.result.content[0].text).toContain(`No pricing configured for`);
+  });
+
+  test('should handle pricing configuration error cases', async () => {
+    // Test 1: Set pricing for non-existent service
+    const invalidServiceResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-set-pricing',
+        arguments: {
+          service: 'nonexistent-service',
+          model: 'some-model',
+          inputCost: 10,
+          outputCost: 20
+        }
+      },
+      id: 301
+    });
+    
+    expect(invalidServiceResponse.result.isError).toBe(true);
+    expect(invalidServiceResponse.result.content[0].text).toContain("Service 'nonexistent-service' not found");
+    
+    // Test 2: Get pricing for service with no pricing configured
+    const noPricingResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-get-pricing',
+        arguments: {
+          service: 'anthropic' // Assuming this doesn't have pricing set in test config
+        }
+      },
+      id: 302
+    });
+    
+    expect(noPricingResponse.result.content[0].text).toContain("No pricing configured for service 'anthropic'");
+    
+    // Test 3: Remove pricing that doesn't exist
+    const removeNonexistentResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-remove-pricing',
+        arguments: {
+          service: 'openai',
+          model: 'nonexistent-model'
+        }
+      },
+      id: 303
+    });
+    
+    expect(removeNonexistentResponse.result.isError).toBe(true);
+    expect(removeNonexistentResponse.result.content[0].text).toContain("No pricing configured for openai/nonexistent-model");
+  });
+
+  test('should successfully view logs via config-view-logs tool', async () => {
+    // First, make sure we have some logs by calling a tool
+    await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-list',
+        arguments: {}
+      },
+      id: 401
+    });
+    
+    // Test 1: View recent logs (default)
+    const viewLogsResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {}
+      },
+      id: 402
+    });
+    
+    expect(viewLogsResponse.result.content[0].text).toContain('Log file:');
+    expect(viewLogsResponse.result.content[0].text).toContain('Showing');
+    expect(viewLogsResponse.result.content[0].text).toMatch(/\[\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\]/); // Contains timestamp
+    
+    // Test 2: View logs with specific number of lines
+    const viewLogsWithLinesResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {
+          lines: 10
+        }
+      },
+      id: 403
+    });
+    
+    expect(viewLogsWithLinesResponse.result.content[0].text).toContain('Showing');
+    const linesMatch = viewLogsWithLinesResponse.result.content[0].text.match(/Showing (\d+) of/);
+    expect(linesMatch).toBeTruthy();
+    if (linesMatch) {
+      expect(parseInt(linesMatch[1])).toBeLessThanOrEqual(10);
+    }
+    
+    // Test 3: Filter by log level
+    const viewErrorLogsResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {
+          level: 'ERROR',
+          lines: 100
+        }
+      },
+      id: 404
+    });
+    
+    // Should either show ERROR logs or indicate no errors found
+    const errorLogsText = viewErrorLogsResponse.result.content[0].text;
+    if (errorLogsText.includes('No logs found')) {
+      expect(errorLogsText).toContain('Level: ERROR');
+    } else {
+      expect(errorLogsText).toContain('filters: level=ERROR');
+    }
+    
+    // Test 4: Search for specific text
+    const searchLogsResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {
+          search: 'config',
+          lines: 20
+        }
+      },
+      id: 405
+    });
+    
+    expect(searchLogsResponse.result.content[0].text).toContain('filters:');
+    expect(searchLogsResponse.result.content[0].text).toContain('search="config"');
+    
+    // Test 5: View logs from non-existent date
+    const oldDateLogsResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {
+          date: '2020-01-01'
+        }
+      },
+      id: 406
+    });
+    
+    expect(oldDateLogsResponse.result.content[0].text).toContain('No log file found for date 2020-01-01');
+  });
+
+  test('should handle log viewing edge cases', async () => {
+    // Test with invalid date format (should be caught by schema validation)
+    const invalidDateRequest = {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {
+          date: 'invalid-date'
+        }
+      },
+      id: 501
+    };
+    
+    const invalidDateResponse = await sendRequest(mcpProcess, invalidDateRequest);
+    
+    // Schema validation should catch this
+    if (invalidDateResponse.error) {
+      expect(invalidDateResponse.error.message).toMatch(/date|format|invalid/i);
+    } else {
+      expect(invalidDateResponse.result.isError).toBe(true);
+    }
+    
+    // Test combining multiple filters
+    const multiFilterResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-view-logs',
+        arguments: {
+          level: 'INFO',
+          search: 'MCP',
+          lines: 5
+        }
+      },
+      id: 502
+    });
+    
+    const multiFilterText = multiFilterResponse.result.content[0].text;
+    if (!multiFilterText.includes('No logs found')) {
+      expect(multiFilterText).toContain('filters: level=INFO, search="MCP"');
+    }
+  });
+
+  test('should run comprehensive diagnostics via doctor tool', async () => {
+    // First set some pricing to make the diagnostics more interesting
+    await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-set-pricing',
+        arguments: {
+          service: 'openai',
+          model: 'gpt-4',
+          inputCost: 5,
+          outputCost: 10
+        }
+      },
+      id: 601
+    });
+    
+    // Run the doctor command
+    const doctorResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'doctor',
+        arguments: {}
+      },
+      id: 602
+    });
+    
+    const doctorOutput = doctorResponse.result.content[0].text;
+    
+    // Verify all major sections are present
+    expect(doctorOutput).toContain('🏥 AI Advisor Diagnostics Report');
+    expect(doctorOutput).toContain('📊 System Information');
+    expect(doctorOutput).toContain('⚙️  Configuration Overview');
+    expect(doctorOutput).toContain('🔌 Plugin Status');
+    expect(doctorOutput).toContain('📋 Recent Logs');
+    expect(doctorOutput).toContain('💡 Health Checks & Recommendations');
+    expect(doctorOutput).toContain('📚 Helpful Commands');
+    
+    // Verify system information
+    expect(doctorOutput).toMatch(/Version: \d+\.\d+\.\d+/);
+    expect(doctorOutput).toContain('Platform:');
+    expect(doctorOutput).toContain('Node Version:');
+    expect(doctorOutput).toContain('Config Directory:');
+    
+    // Verify configuration is shown with masked API keys
+    expect(doctorOutput).toContain('Services Configured:');
+    expect(doctorOutput).toContain('openai:');
+    expect(doctorOutput).toMatch(/API Key: \*\*\*[a-zA-Z0-9]{4}/); // Masked key
+    
+    // Verify pricing info is shown
+    expect(doctorOutput).toContain('Pricing Configured: 1 models');
+    
+    // Verify plugin status
+    expect(doctorOutput).toContain('Enabled Plugins:');
+    
+    // Verify log summary
+    expect(doctorOutput).toMatch(/Log Summary: \d+ errors, \d+ warnings, \d+ info messages/);
+    
+    // Verify helpful commands section
+    expect(doctorOutput).toContain('config-view-logs --level ERROR');
+    expect(doctorOutput).toContain('config-set-pricing');
+    expect(doctorOutput).toContain('config-backup');
+  });
+
+  test('should show appropriate recommendations in doctor output', async () => {
+    // Create a service without an API key to trigger a recommendation
+    await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-set',
+        arguments: {
+          service: 'testservice',
+          key: 'models',
+          value: 'test-model-1,test-model-2'
+        }
+      },
+      id: 701
+    });
+    
+    // Run doctor to see recommendations
+    const doctorResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'doctor',
+        arguments: {}
+      },
+      id: 702
+    });
+    
+    const doctorOutput = doctorResponse.result.content[0].text;
+    
+    // Should have a warning about missing API key
+    expect(doctorOutput).toContain('⚠️  No API key configured for testservice');
+    
+    // Clean up
+    await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'config-remove',
+        arguments: {
+          service: 'testservice'
+        }
+      },
+      id: 703
+    });
+  });
+
+  test('should handle doctor command errors gracefully', async () => {
+    // This test ensures doctor command doesn't crash even with issues
+    // The command should always return useful output
+    const doctorResponse = await sendRequest(mcpProcess, {
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: {
+        name: 'doctor',
+        arguments: {}
+      },
+      id: 801
+    });
+    
+    // Should always return a successful response with diagnostic info
+    expect(doctorResponse.result).toBeDefined();
+    expect(doctorResponse.result.isError).not.toBe(true);
+    expect(doctorResponse.result.content[0].text).toContain('AI Advisor Diagnostics Report');
+  });
 });

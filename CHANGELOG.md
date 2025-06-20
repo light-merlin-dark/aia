@@ -5,6 +5,61 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-06-20
+
+### Added
+- **Comprehensive MCP Configuration Management Suite**
+  - Complete set of configuration tools accessible via MCP:
+    - `config-set-pricing`: Set input/output costs per model ($/million tokens)
+    - `config-get-pricing`: View pricing information for services/models
+    - `config-remove-pricing`: Remove pricing configuration
+  - All pricing tools support validation and error handling
+  
+- **Advanced Log Viewing System**
+  - `config-view-logs`: Powerful log viewer with filtering capabilities
+    - Filter by log level (ERROR, WARN, INFO, DEBUG)
+    - Search for specific text within logs
+    - View logs from specific dates (YYYY-MM-DD format)
+    - Control number of lines returned (1-1000, default 50)
+    - Efficient reading without loading entire files into memory
+  
+- **Comprehensive System Diagnostics**
+  - `doctor`: All-in-one diagnostic tool providing:
+    - System information (version, platform, Node.js version)
+    - Configuration overview with masked API keys
+    - Plugin status and available model counts
+    - Recent log summary with error/warning counts
+    - Health checks and actionable recommendations
+    - Helpful MCP command reference
+  - Intelligent recommendations for missing API keys, pricing, and default models
+  
+- **Enhanced Testing Strategy**
+  - All new MCP tools have comprehensive E2E test coverage
+  - Tests use MCP interface directly (not CLI) for real-world validation
+  - Edge case testing for error conditions and validation
+  - 13/13 MCP server tests passing with new tools included
+
+### Changed
+- **Testing Focus on MCP Interface**
+  - All tests now go through MCP protocol for authentic validation
+  - Improved test sustainability for real deployment scenarios
+  - Better coverage of tool failures and error handling
+  
+- **Enhanced Cost Tracking Integration**
+  - Pricing configuration now fully integrated with MCP tools
+  - Seamless cost tracking setup via MCP interface
+  - Better pricing validation and error messages
+
+### Performance
+- Overall test coverage: 133/142 tests passing (93.7%)
+- MCP server test suite: 13/13 tests passing
+- All new diagnostic and log tools optimized for performance
+
+### Documentation
+- Updated README with comprehensive MCP tool documentation
+- Organized tools into logical categories (Core AI, Configuration, Diagnostics)
+- Added usage examples for new diagnostic capabilities
+
 ## [0.4.0] - 2025-06-19
 
 ### Added

@@ -648,6 +648,442 @@ async function main() {
         }
       }
     );
+    
+    // config-set-pricing tool
+    server.tool(
+      "config-set-pricing",
+      "Set input and output pricing for a specific model. Pricing is in dollars per million tokens.",
+      {
+        service: z.string().describe("The service name (e.g., 'openai', 'anthropic', 'openrouter')"),
+        model: z.string().describe("The model name (e.g., 'gpt-4-turbo', 'claude-3-opus-20240229')"),
+        inputCost: z.number().min(0).max(1000).describe("Input cost per million tokens in dollars (e.g., 10 for $10/M)"),
+        outputCost: z.number().min(0).max(1000).describe("Output cost per million tokens in dollars (e.g., 30 for $30/M)")
+      },
+      async ({ service, model, inputCost, outputCost }) => {
+        try {
+          const config = await configManager.getConfig();
+          
+          // Check if service exists
+          if (!config.services[service]) {
+            return {
+              isError: true,
+              content: [{
+                type: "text" as const,
+                text: `Service '${service}' not found. Available services: ${Object.keys(config.services).join(', ')}`
+              }]
+            };
+          }
+          
+          // Initialize pricing object if needed
+          if (!config.services[service].pricing) {
+            config.services[service].pricing = {};
+          }
+          
+          // Set pricing
+          config.services[service].pricing![model] = {
+            inputCostPerMillion: inputCost,
+            outputCostPerMillion: outputCost
+          };
+          
+          await configManager.saveConfig(config);
+          
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully set pricing for ${service}/${model}:\n- Input: $${inputCost}/M tokens\n- Output: $${outputCost}/M tokens`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error setting pricing: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-get-pricing tool
+    server.tool(
+      "config-get-pricing",
+      "Get pricing information for a specific model or all models in a service",
+      {
+        service: z.string().describe("The service name (e.g., 'openai', 'anthropic', 'openrouter')"),
+        model: z.string().optional().describe("Optional model name to get specific pricing")
+      },
+      async ({ service, model }) => {
+        try {
+          const config = await configManager.getConfig();
+          
+          if (!config.services[service]) {
+            return {
+              isError: true,
+              content: [{
+                type: "text" as const,
+                text: `Service '${service}' not found. Available services: ${Object.keys(config.services).join(', ')}`
+              }]
+            };
+          }
+          
+          const pricing = config.services[service].pricing;
+          
+          if (!pricing || Object.keys(pricing).length === 0) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: `No pricing configured for service '${service}'`
+              }]
+            };
+          }
+          
+          if (model) {
+            // Get specific model pricing
+            if (!pricing[model]) {
+              return {
+                content: [{
+                  type: "text" as const,
+                  text: `No pricing configured for ${service}/${model}`
+                }]
+              };
+            }
+            
+            return {
+              content: [{
+                type: "text" as const,
+                text: `Pricing for ${service}/${model}:\n- Input: $${pricing[model].inputCostPerMillion}/M tokens\n- Output: $${pricing[model].outputCostPerMillion}/M tokens`
+              }]
+            };
+          } else {
+            // List all pricing for service
+            let result = `Pricing for ${service}:\n`;
+            for (const [modelName, modelPricing] of Object.entries(pricing)) {
+              result += `\n${modelName}:\n`;
+              result += `- Input: $${modelPricing.inputCostPerMillion}/M tokens\n`;
+              result += `- Output: $${modelPricing.outputCostPerMillion}/M tokens\n`;
+            }
+            
+            return {
+              content: [{
+                type: "text" as const,
+                text: result
+              }]
+            };
+          }
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error getting pricing: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-remove-pricing tool
+    server.tool(
+      "config-remove-pricing",
+      "Remove pricing configuration for a specific model",
+      {
+        service: z.string().describe("The service name (e.g., 'openai', 'anthropic', 'openrouter')"),
+        model: z.string().describe("The model name to remove pricing for")
+      },
+      async ({ service, model }) => {
+        try {
+          const config = await configManager.getConfig();
+          
+          if (!config.services[service]?.pricing?.[model]) {
+            return {
+              isError: true,
+              content: [{
+                type: "text" as const,
+                text: `No pricing configured for ${service}/${model}`
+              }]
+            };
+          }
+          
+          delete config.services[service].pricing![model];
+          
+          // Clean up empty pricing object
+          if (Object.keys(config.services[service].pricing!).length === 0) {
+            delete config.services[service].pricing;
+          }
+          
+          await configManager.saveConfig(config);
+          
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Successfully removed pricing for ${service}/${model}`
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error removing pricing: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // doctor tool - comprehensive diagnostics
+    server.tool(
+      "doctor",
+      "Run comprehensive diagnostics including configuration, logs, and system information. Great for troubleshooting.",
+      {},
+      async () => {
+        try {
+          const { readFileSync, existsSync } = await import('fs');
+          const { join } = await import('path');
+          const { homedir, platform, release } = await import('os');
+          const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'));
+          
+          let diagnostic = "🏥 AI Advisor Diagnostics Report\n";
+          diagnostic += "=" .repeat(50) + "\n\n";
+          
+          // System Information
+          diagnostic += "📊 System Information\n";
+          diagnostic += "-".repeat(30) + "\n";
+          diagnostic += `Version: ${packageJson.version}\n`;
+          diagnostic += `Platform: ${platform()} ${release()}\n`;
+          diagnostic += `Node Version: ${process.version}\n`;
+          diagnostic += `Working Directory: ${process.cwd()}\n`;
+          diagnostic += `Config Directory: ${join(homedir(), '.aia')}\n`;
+          diagnostic += `Date: ${new Date().toISOString()}\n\n`;
+          
+          // Configuration Overview
+          diagnostic += "⚙️  Configuration Overview\n";
+          diagnostic += "-".repeat(30) + "\n";
+          try {
+            const config = await configManager.getConfig();
+            const serviceCount = Object.keys(config.services).length;
+            diagnostic += `Services Configured: ${serviceCount}\n`;
+            
+            for (const [service, serviceConfig] of Object.entries(config.services)) {
+              diagnostic += `\n${service}:\n`;
+              diagnostic += `  - API Key: ${serviceConfig.apiKey ? '***' + serviceConfig.apiKey.slice(-4) : 'Not Set'}\n`;
+              if (serviceConfig.models && serviceConfig.models.length > 0) {
+                diagnostic += `  - Models: ${serviceConfig.models.join(', ')}\n`;
+              }
+              if (serviceConfig.pricing) {
+                const pricingCount = Object.keys(serviceConfig.pricing).length;
+                diagnostic += `  - Pricing Configured: ${pricingCount} models\n`;
+              }
+              if (serviceConfig.endpoint) {
+                diagnostic += `  - Custom Endpoint: ${serviceConfig.endpoint}\n`;
+              }
+            }
+            
+            if (config.defaultModel) {
+              diagnostic += `\nDefault Model: ${config.defaultModel}\n`;
+            }
+          } catch (error: any) {
+            diagnostic += `Error loading config: ${error.message}\n`;
+          }
+          
+          // Plugin Status
+          diagnostic += "\n🔌 Plugin Status\n";
+          diagnostic += "-".repeat(30) + "\n";
+          try {
+            const enabledPlugins = registry.getEnabledPlugins();
+            diagnostic += `Enabled Plugins: ${enabledPlugins.length}\n`;
+            for (const plugin of enabledPlugins) {
+              const models = ('listModels' in plugin && typeof plugin.listModels === 'function') ? plugin.listModels() : [];
+              diagnostic += `- ${plugin.name}: ${models.length} models\n`;
+            }
+          } catch (error: any) {
+            diagnostic += `Error loading plugins: ${error.message}\n`;
+          }
+          
+          // Recent Logs
+          diagnostic += "\n📋 Recent Logs (Last 50 lines)\n";
+          diagnostic += "-".repeat(30) + "\n";
+          try {
+            const logDir = join(homedir(), '.aia', 'logs');
+            const logDate = new Date().toISOString().split('T')[0];
+            const logFilePath = join(logDir, `mcp-server-${logDate}.log`);
+            
+            if (existsSync(logFilePath)) {
+              const logContent = readFileSync(logFilePath, 'utf-8');
+              const allLines = logContent.split('\n').filter(line => line.trim());
+              const recentLines = allLines.slice(-50);
+              
+              // Count log levels
+              let errorCount = 0, warnCount = 0, infoCount = 0;
+              for (const line of allLines) {
+                if (line.includes('[ERROR]')) errorCount++;
+                else if (line.includes('[WARN]')) warnCount++;
+                else if (line.includes('[INFO]')) infoCount++;
+              }
+              
+              diagnostic += `Log Summary: ${errorCount} errors, ${warnCount} warnings, ${infoCount} info messages\n`;
+              diagnostic += `Showing last ${recentLines.length} lines:\n\n`;
+              diagnostic += recentLines.join('\n');
+            } else {
+              diagnostic += `No log file found for today (${logDate})\n`;
+            }
+          } catch (error: any) {
+            diagnostic += `Error reading logs: ${error.message}\n`;
+          }
+          
+          // Health Checks and Recommendations
+          diagnostic += "\n\n💡 Health Checks & Recommendations\n";
+          diagnostic += "-".repeat(30) + "\n";
+          
+          const recommendations: string[] = [];
+          
+          // Check for API keys
+          const config = await configManager.getConfig();
+          for (const [service, serviceConfig] of Object.entries(config.services)) {
+            if (!serviceConfig.apiKey) {
+              recommendations.push(`⚠️  No API key configured for ${service}`);
+            }
+          }
+          
+          // Check for pricing configuration
+          let totalPricingConfigured = 0;
+          for (const serviceConfig of Object.values(config.services)) {
+            if (serviceConfig.pricing) {
+              totalPricingConfigured += Object.keys(serviceConfig.pricing).length;
+            }
+          }
+          if (totalPricingConfigured === 0) {
+            recommendations.push(`💰 No pricing configured. Use config-set-pricing to enable cost tracking.`);
+          }
+          
+          // Check for default model
+          if (!config.defaultModel && (!config.defaultModels || config.defaultModels.length === 0)) {
+            recommendations.push(`🎯 No default model configured. Use config-set-default to set one.`);
+          }
+          
+          if (recommendations.length === 0) {
+            diagnostic += "✅ All systems operational!\n";
+          } else {
+            diagnostic += recommendations.join('\n') + "\n";
+          }
+          
+          // Common Commands
+          diagnostic += "\n📚 Helpful MCP Tool Commands\n";
+          diagnostic += "-".repeat(30) + "\n";
+          diagnostic += "- View error logs: config-view-logs (with level='ERROR')\n";
+          diagnostic += "- Set pricing: config-set-pricing (service, model, inputCost, outputCost)\n";
+          diagnostic += "- Backup config: config-backup (optional name parameter)\n";
+          diagnostic += "- List all config: config-list (no parameters needed)\n";
+          diagnostic += "- View recent logs: config-view-logs (lines=100)\n";
+          diagnostic += "- Search logs: config-view-logs (search='error')\n";
+          
+          return {
+            content: [{
+              type: "text" as const,
+              text: diagnostic
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error running diagnostics: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
+    
+    // config-view-logs tool
+    server.tool(
+      "config-view-logs",
+      "View MCP server logs with filtering capabilities. Useful for debugging errors and monitoring server activity.",
+      {
+        lines: z.number().min(1).max(1000).optional().describe("Number of recent lines to return (default: 50, max: 1000)"),
+        level: z.enum(["ERROR", "WARN", "INFO", "DEBUG"]).optional().describe("Filter by log level"),
+        search: z.string().optional().describe("Search for specific text in logs"),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe("Specific date to view logs (YYYY-MM-DD, defaults to today)")
+      },
+      async ({ lines = 50, level, search, date }) => {
+        try {
+          const { readFileSync, existsSync } = await import('fs');
+          const { join } = await import('path');
+          const { homedir } = await import('os');
+          
+          // Determine log file path
+          const logDir = join(homedir(), '.aia', 'logs');
+          const logDate = date || new Date().toISOString().split('T')[0];
+          const logFilePath = join(logDir, `mcp-server-${logDate}.log`);
+          
+          // Check if log file exists
+          if (!existsSync(logFilePath)) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: `No log file found for date ${logDate}`
+              }]
+            };
+          }
+          
+          // Read log file
+          const logContent = readFileSync(logFilePath, 'utf-8');
+          const allLines = logContent.split('\n').filter(line => line.trim());
+          
+          // Apply filters
+          let filteredLines = allLines;
+          
+          // Filter by log level if specified
+          if (level) {
+            filteredLines = filteredLines.filter(line => line.includes(`[${level}]`));
+          }
+          
+          // Search filter if specified
+          if (search) {
+            filteredLines = filteredLines.filter(line => 
+              line.toLowerCase().includes(search.toLowerCase())
+            );
+          }
+          
+          // Get the requested number of most recent lines
+          const startIndex = Math.max(0, filteredLines.length - lines);
+          const resultLines = filteredLines.slice(startIndex);
+          
+          if (resultLines.length === 0) {
+            return {
+              content: [{
+                type: "text" as const,
+                text: `No logs found matching criteria:\n- Date: ${logDate}\n- Level: ${level || 'any'}\n- Search: ${search || 'none'}`
+              }]
+            };
+          }
+          
+          // Format response
+          let response = `Log file: ${logFilePath}\n`;
+          response += `Showing ${resultLines.length} of ${filteredLines.length} filtered lines`;
+          if (level || search) {
+            response += ` (filters: ${level ? `level=${level}` : ''}${level && search ? ', ' : ''}${search ? `search="${search}"` : ''})`;
+          }
+          response += `\n\n${resultLines.join('\n')}`;
+          
+          return {
+            content: [{
+              type: "text" as const,
+              text: response
+            }]
+          };
+        } catch (error: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text" as const,
+              text: `Error reading logs: ${error.message}`
+            }]
+          };
+        }
+      }
+    );
 
     // Register any additional MCP tools from plugins
     logger.info('Registering plugin tools...');
