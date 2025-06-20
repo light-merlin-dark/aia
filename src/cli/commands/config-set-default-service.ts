@@ -42,21 +42,10 @@ export const command: CommandSpec = {
       // Set default service
       (config as any).defaultService = service;
       
-      // If service has only one model, also set it as default model
-      const serviceConfig = config.services[service];
-      if (serviceConfig.models && serviceConfig.models.length === 1) {
-        config.defaultModel = `${service}/${serviceConfig.models[0]}`;
-        logger.info(`Also setting default model to ${config.defaultModel} (only model in service)`);
-      }
-      
       await configManager.saveConfig(config);
       
       logger.info(`Default service set to: ${service}`);
       console.log(`✓ Default service set to: ${service}`);
-      
-      if (config.defaultModel) {
-        console.log(`✓ Default model set to: ${config.defaultModel}`);
-      }
       
       return {
         success: true,

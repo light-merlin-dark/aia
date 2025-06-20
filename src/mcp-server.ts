@@ -524,18 +524,9 @@ async function main() {
           
           (config as any).defaultService = service;
           
-          // If service has only one model, also set it as default model
-          const serviceConfig = config.services[service];
-          if (serviceConfig.models && serviceConfig.models.length === 1) {
-            config.defaultModel = `${service}/${serviceConfig.models[0]}`;
-          }
-          
           await configManager.saveConfig(config);
           
-          let message = `Successfully set default service to ${service}`;
-          if (config.defaultModel) {
-            message += `\nAlso set default model to ${config.defaultModel} (only model in service)`;
-          }
+          const message = `Successfully set default service to ${service}`;
           
           return {
             content: [{
