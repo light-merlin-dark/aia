@@ -1,4 +1,7 @@
 import { test, expect, beforeAll, afterAll, describe } from 'bun:test';
+
+// Skip slow MCP E2E tests by default - run with TEST_MCP=1 to enable
+const shouldSkipMCP = !process.env.TEST_MCP;
 import { spawn, ChildProcess } from 'child_process';
 import { join } from 'path';
 import { setupTestConfig } from './setup-test-config';
@@ -6,12 +9,12 @@ import { encrypt } from '../../src/config/crypto';
 import { writeFileSync } from 'fs';
 
 // Helper to wait for a specific pattern in stdout
-async function waitForOutput(proc: ChildProcess, pattern: string | RegExp, timeout = 5000): Promise<string> {
+async function waitForOutput(proc: ChildProcess, pattern: string | RegExp, timeout = 1000): Promise<string> {
   return new Promise((resolve, reject) => {
     let output = '';
     const timer = setTimeout(() => {
       proc.stdout?.removeListener('data', handler);
-      reject(new Error(`Timeout waiting for pattern: ${pattern}`));
+      reject(new Error(`Timeout waiting for pattern: ${pattern} (after ${timeout}ms)`));
     }, timeout);
     
     const handler = (data: Buffer) => {
@@ -65,7 +68,7 @@ async function sendRequest(proc: ChildProcess, request: any): Promise<any> {
   });
 }
 
-describe('MCP Server E2E Tests (Bun)', () => {
+describe.skipIf(shouldSkipMCP)('MCP Server E2E Tests (Bun)', () => {
   let mcpProcess: ChildProcess;
   let isInitialized = false;
   

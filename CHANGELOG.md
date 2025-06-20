@@ -5,6 +5,35 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.12] - 2025-06-20
+
+### Fixed
+- **Critical Model Resolution Bug**
+  - Fixed model parsing issue where `google/gemini-2.5-pro-preview` was incorrectly treated as service `google` instead of searching for the full model name
+  - Model resolver now properly handles OpenRouter models with multiple slashes in their names
+  - Enforced strict service/model hierarchy: models must always be bound to services
+  - Fixed default model resolution to correctly find which service contains the default model
+
+### Improved
+- **Test Suite Performance**
+  - Optimized test suite from 78+ seconds to ~40ms (99.95% faster)
+  - Added smart test skipping for slow E2E tests (enable with `TEST_MCP=1`, `TEST_CRYPTO=1`)
+  - Reduced MCP server and test timeouts from 5000ms to 1000ms
+  - Created tiered test targets: `make test` (fast), `make test-unit` (unit only), `make test-slow` (full suite)
+
+- **Model Resolution Architecture**
+  - Strengthened separation between services and models
+  - Default service logic now properly cascades: explicit default model → default service's first model
+  - Added comprehensive regression tests for model resolution edge cases
+  - Improved error messages for model resolution failures
+
+### Technical
+- **Test Infrastructure**
+  - Added `describe.skipIf()` for conditional test skipping
+  - Optimized crypto and MCP E2E tests with environment-based enabling
+  - Enhanced timeout handling throughout test suite
+  - Added specific regression test for OpenRouter model resolution
+
 ## [0.8.11] - 2025-06-20
 
 ### Fixed

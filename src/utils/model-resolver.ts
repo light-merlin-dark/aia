@@ -7,33 +7,65 @@ export interface ResolvedModel {
 export class ModelResolver {
   /**
    * Resolves a model name to its service and full name.
-   * Supports formats:
-   * - "service/model" (e.g., "openai/o3-mini")
-   * - "model" (e.g., "o3-mini") - will search all services
+   * STRICT HIERARCHY: Models must always be bound to services.
+   * 
+   * Supported formats:
+   * - "service/model" (e.g., "openai/gpt-4", "openrouter/google/gemini-2.5-pro-preview")
+   * - "model" (e.g., "gpt-4") - will use default service if configured
    * 
    * @param modelName The model name to resolve
    * @param config The configuration object
    * @returns The resolved model or throws an error
    */
   static async resolveModel(modelName: string, config: any): Promise<ResolvedModel> {
-    // Check if model already includes service prefix
+    // Case 1: Fully qualified service/model format
     if (modelName.includes('/')) {
       const firstSlashIndex = modelName.indexOf('/');
       const service = modelName.substring(0, firstSlashIndex);
       const model = modelName.substring(firstSlashIndex + 1);
       
-      // Verify service exists and model is configured for this service
-      if (config.services[service] && 
-          config.services[service].models && 
-          config.services[service].models.includes(model)) {
+      // Check if this is actually a service/model format by verifying service exists
+      if (config.services[service]) {
+        // Verify model exists in that service
+        if (!config.services[service].models || !config.services[service].models.includes(model)) {
+          const availableModels = config.services[service].models || [];
+          throw new Error(
+            `Model '${model}' not configured for service '${service}'.\n` +
+            `Available models for ${service}: ${availableModels.join(', ') || 'none configured'}`
+          );
+        }
+        
         return { service, model, fullName: modelName };
       }
       
-      // If the service doesn't exist or model isn't in that service,
-      // treat this as a bare model name and continue with the search below
+      // If service doesn't exist, treat the entire string as a model name
+      // and fall through to search all services
     }
     
-    // Search for model in all services
+    // Case 2: Bare model name - use default service if configured
+    if (config.defaultService) {
+      const defaultService = config.defaultService;
+      
+      // Verify default service exists
+      if (!config.services[defaultService]) {
+        throw new Error(
+          `Default service '${defaultService}' not found in configuration`
+        );
+      }
+      
+      // Check if model exists in default service
+      if (config.services[defaultService].models && 
+          config.services[defaultService].models.includes(modelName)) {
+        return {
+          service: defaultService,
+          model: modelName,
+          fullName: `${defaultService}/${modelName}`
+        };
+      }
+    }
+    
+    // Case 3: No default service or model not in default service
+    // Search all services but require explicit disambiguation if found in multiple
     const services = Object.keys(config.services).filter(s => s !== 'default');
     const foundIn: string[] = [];
     
@@ -45,7 +77,7 @@ export class ModelResolver {
     }
     
     if (foundIn.length === 0) {
-      // Model not found in any service
+      // Model not found anywhere
       const allModels: string[] = [];
       for (const service of services) {
         const serviceConfig = config.services[service];
@@ -56,27 +88,18 @@ export class ModelResolver {
       
       throw new Error(
         `Model '${modelName}' not found in any configured service.\n` +
-        `Available models:\n${allModels.map(m => `  - ${m}`).join('\n')}`
+        `Available models:\n${allModels.map(m => `  - ${m}`).join('\n')}\n\n` +
+        `Use the format: service/model (e.g., openai/${modelName})`
       );
     }
     
     if (foundIn.length > 1) {
-      // Model found in multiple services - check for default service
-      if (config.defaultService && foundIn.includes(config.defaultService)) {
-        // Use default service to resolve ambiguity
-        return { 
-          service: config.defaultService, 
-          model: modelName, 
-          fullName: `${config.defaultService}/${modelName}` 
-        };
-      }
-      
-      // No default service or default service doesn't have this model
+      // Model found in multiple services - require explicit specification
       throw new Error(
         `Model '${modelName}' is configured in multiple services: ${foundIn.join(', ')}.\n` +
-        `Please specify the service explicitly using the format: service/model\n` +
-        `For example: ${foundIn[0]}/${modelName}\n` +
-        `Or set a default service using: aia config-set-default-service <service>`
+        `Please specify the service explicitly:\n` +
+        foundIn.map(s => `  - ${s}/${modelName}`).join('\n') + '\n\n' +
+        `Or set a default service: aia config-set-default-service <service>`
       );
     }
     
@@ -108,23 +131,54 @@ export class ModelResolver {
   }
   
   /**
-   * Gets the default model(s) from configuration
+   * Gets the default model(s) from configuration.
+   * STRICT HIERARCHY: Always returns fully qualified service/model names.
    */
   static getDefaultModels(config: any): string[] {
     const models: string[] = [];
     
-    // Check for defaultModels array
-    if (config.defaultModels && Array.isArray(config.defaultModels)) {
-      models.push(...config.defaultModels);
+    // Priority 1: Explicit defaultModel (resolve it properly)
+    if (config.defaultModel) {
+      if (config.defaultModel.includes('/')) {
+        // Fully qualified - use as-is
+        models.push(config.defaultModel);
+      } else {
+        // Bare model - find which service it belongs to
+        const services = Object.keys(config.services).filter(s => s !== 'default');
+        let foundService = null;
+        
+        for (const service of services) {
+          const serviceConfig = config.services[service];
+          if (serviceConfig.models && serviceConfig.models.includes(config.defaultModel)) {
+            foundService = service;
+            break;
+          }
+        }
+        
+        if (foundService) {
+          models.push(`${foundService}/${config.defaultModel}`);
+        } else {
+          console.warn(`Default model '${config.defaultModel}' not found in any service. Skipping.`);
+        }
+      }
     }
-    // Check for single defaultModel
-    else if (config.defaultModel) {
-      models.push(config.defaultModel);
+    // Priority 2: Explicit defaultModels array (must be fully qualified)
+    else if (config.defaultModels && Array.isArray(config.defaultModels)) {
+      for (const model of config.defaultModels) {
+        if (model.includes('/')) {
+          models.push(model);
+        } else if (config.defaultService) {
+          models.push(`${config.defaultService}/${model}`);
+        } else {
+          console.warn(`Default model '${model}' is not fully qualified and no default service is set. Skipping.`);
+        }
+      }
     }
-    // Check for default service with single model
+    // Priority 3: Use default service's first model if no explicit defaults
     else if (config.defaultService) {
       const serviceConfig = config.services[config.defaultService];
-      if (serviceConfig?.models?.length === 1) {
+      if (serviceConfig?.models?.length > 0) {
+        // Use the first model in the default service
         models.push(`${config.defaultService}/${serviceConfig.models[0]}`);
       }
     }

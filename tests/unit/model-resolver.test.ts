@@ -21,7 +21,8 @@ describe('ModelResolver', () => {
         service: 'openai'
       }
     },
-    defaultService: 'openrouter'
+    defaultService: 'openrouter',
+    defaultModel: 'claude-sonnet-4-20250514'
   };
 
   test('should resolve OpenRouter models with multiple slashes correctly', async () => {
@@ -75,5 +76,42 @@ describe('ModelResolver', () => {
     expect(async () => {
       await ModelResolver.resolveModel('openai/non-existent-model', mockConfig);
     }).toThrow();
+  });
+
+  test('should maintain strict service/model hierarchy - REGRESSION TEST', async () => {
+    // This test ensures the specific bug that caused google/gemini-2.5-pro-preview 
+    // to be treated as service 'google' with model 'gemini-2.5-pro-preview' 
+    // instead of searching for the full model name in configured services
+    
+    const result = await ModelResolver.resolveModel('google/gemini-2.5-pro-preview', mockConfig);
+    
+    // Should resolve to openrouter service since that's where the model is configured
+    expect(result.service).toBe('openrouter');
+    expect(result.model).toBe('google/gemini-2.5-pro-preview');
+    expect(result.fullName).toBe('openrouter/google/gemini-2.5-pro-preview');
+  });
+
+  test('should properly resolve default models with strict hierarchy', async () => {
+    // Test that default model resolution finds the correct service
+    const models = ModelResolver.getDefaultModels(mockConfig);
+    
+    // Since defaultModel is 'claude-sonnet-4-20250514' (bare model), 
+    // it should find it in anthropic service and return fully qualified name
+    expect(models).toContain('anthropic/claude-sonnet-4-20250514');
+    expect(models.length).toBe(1);
+  });
+
+  test('should fallback to default service when no explicit default model', async () => {
+    // Test config without defaultModel but with defaultService
+    const configWithoutDefaultModel = {
+      ...mockConfig,
+      defaultModel: undefined
+    };
+    
+    const models = ModelResolver.getDefaultModels(configWithoutDefaultModel);
+    
+    // Should use first model from default service (openrouter)
+    expect(models).toContain('openrouter/google/gemini-2.5-pro-preview');
+    expect(models.length).toBe(1);
   });
 });

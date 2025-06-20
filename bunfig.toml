@@ -1,5 +1,7 @@
 [test]
 preload = ["./tests/setup.ts"]
+# Increase concurrency for faster test execution
+timeout = "30s"
 
 [run]
 silent = false

@@ -44,7 +44,7 @@ async function callMcp(target: string, method: string, params?: any) {
     const timeout = setTimeout(() => {
       mcpProcess.kill();
       reject(new Error('MCP call timeout'));
-    }, 5000);
+    }, 1000);
 
     mcpProcess.on('close', (code) => {
       clearTimeout(timeout);

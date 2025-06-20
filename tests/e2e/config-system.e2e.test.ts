@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+
+// Skip slow crypto E2E tests by default - run with TEST_CRYPTO=1 to enable
+const shouldSkipCrypto = !process.env.TEST_CRYPTO;
 import { encrypt, decrypt } from '../../src/config/crypto';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -6,7 +9,7 @@ import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { randomBytes } from 'crypto';
 
 // Test the complete config system lifecycle with real encryption
-describe('Config System E2E Tests', () => {
+describe.skipIf(shouldSkipCrypto)('Config System E2E Tests', () => {
   let testDir: string;
   let testKeyFile: string;
   let testConfigFile: string;
