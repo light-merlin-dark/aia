@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
 import { Plugin, AIProviderPlugin } from './types';
 import { createLogger } from '../services/logger';
 
@@ -17,10 +18,19 @@ export class PluginLoader {
 
   constructor(pluginPaths?: string[]) {
     // Default paths: built-in plugins and user plugins
-    this.pluginPaths = pluginPaths || [
-      path.join(process.cwd(), 'plugins'),
-      path.join(process.env.HOME || '', '.aia', 'plugins')
-    ];
+    if (pluginPaths) {
+      this.pluginPaths = pluginPaths;
+    } else {
+      // Get the module directory and resolve package root
+      const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+      const packageRoot = path.resolve(moduleDir, '..', '..');
+      
+      this.pluginPaths = [
+        path.join(packageRoot, 'plugins'),                     // Built-in plugins (always available)
+        path.join(process.env.HOME || '', '.aia', 'plugins'),  // User plugins
+        path.join(process.cwd(), 'plugins')                    // Project-specific plugins (fallback)
+      ];
+    }
   }
 
   async loadPlugins(): Promise<PluginLoadResult[]> {

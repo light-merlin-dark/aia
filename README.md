@@ -1,4 +1,4 @@
-# AIA 🤖
+# AIA
 
 **The Model Context Protocol (MCP) enabled CLI for parallel AI consultation.**
 

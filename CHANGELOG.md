@@ -5,6 +5,27 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.11] - 2025-06-20
+
+### Fixed
+- **Plugin Loading Path Dependency**
+  - Fixed critical issue where plugins wouldn't load when MCP server runs from different working directories
+  - Plugin loader now uses package-relative paths instead of `process.cwd()` for consistent plugin discovery
+  - Plugins now load reliably regardless of the directory where the MCP server is started
+  - Enhanced plugin path resolution with proper fallback hierarchy (package plugins → user plugins → project plugins)
+
+- **Health Check Logic**
+  - Fixed false warning about "No API key configured for default" service in doctor command
+  - Health check now correctly skips default service when a default model is properly configured
+  - Only warns about default service when no default model is configured
+  - Improved health check accuracy and reduced false positive warnings
+
+### Technical
+- **Import Updates**
+  - Added `fileURLToPath` import for proper ES module path resolution
+  - Enhanced plugin loader constructor with package root detection
+  - Better error handling for empty or missing API key configurations
+
 ## [0.8.10] - 2025-06-20
 
 ### Fixed

@@ -1031,7 +1031,16 @@ async function main() {
           // Check for API keys
           const config = await configManager.getConfig();
           for (const [service, serviceConfig] of Object.entries(config.services)) {
-            if (!serviceConfig.apiKey) {
+            // Skip 'default' service - it doesn't need its own API key if a default model is configured
+            if (service === 'default') {
+              // Only warn about default if there's no default model configured
+              if (!config.defaultModel) {
+                recommendations.push(`⚠️  No default model configured`);
+              }
+              continue;
+            }
+            
+            if (!serviceConfig.apiKey || serviceConfig.apiKey.trim() === '') {
               recommendations.push(`⚠️  No API key configured for ${service}`);
             }
           }
