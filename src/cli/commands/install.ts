@@ -27,11 +27,13 @@ Example:
       await execAsync(command);
       
       console.log('✅ AIA successfully installed as MCP server!');
-      console.log('\nYou can now use AIA tools in Claude Code:');
-      console.log('  • consult - Query AI models with file attachments');
-      console.log('  • config-* - Manage configuration');
-      console.log('  • doctor - Run system diagnostics');
-      console.log('\nFor more details, see: https://github.com/light-merlin-dark/ai-advisor#model-context-protocol-mcp-setup');
+      console.log('\nKey MCP tools now available in Claude Code:');
+      console.log('  • consult - Query multiple AI models in parallel with file context');
+      console.log('  • doctor - Complete system diagnostics and health checks');  
+      console.log('  • config-list - View all configuration (API keys masked)');
+      console.log('  • config-set - Configure services, models, and pricing');
+      console.log('\nStart with: consult {"prompt": "Hello!", "models": ["your-model"]}');
+      console.log('Full documentation: https://github.com/light-merlin-dark/ai-advisor#model-context-protocol-mcp-setup');
       
       return {
         success: true,

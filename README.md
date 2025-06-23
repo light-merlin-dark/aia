@@ -36,26 +36,22 @@ Extend AIA with provider plugins:
 # Install AIA globally
 npm install -g @light-merlin-dark/aia
 
-# Ensure installed correctly in Claude Code
-claude mcp remove aia 2>/dev/null || true && claude mcp add-json aia '{
-  "type":"stdio",
-  "command":"aia-mcp",
-  "env":{"NODE_NO_WARNINGS":"1"}
-}'
+# Install as MCP server in Claude Code
+aia install
 ```
 
 ### Available MCP Tools
 Once configured, AI agents gain access to powerful tools:
 
 #### Core AI Tools
-- `consult` - Query one or more AI models with optional file attachments
+- `consult` - Query multiple AI models with optional file attachments
   - Supports parallel model consultation
   - File and directory attachment for context
   - Optional best-of selection mode
   - JSON-structured responses with cost tracking
 
 #### Configuration Management
-- `config-list` - View all configuration (with masked secrets)
+- `config-list` - List all configuration (with masked secrets)
 - `config-get` - Get configuration for specific services
 - `config-set` - Set configuration values
 - `config-remove` - Remove services from configuration
@@ -63,6 +59,7 @@ Once configured, AI agents gain access to powerful tools:
 #### Model & Pricing Management
 - `config-add-model` - Add models to services
 - `config-set-default` - Set default model
+- `config-set-default-service` - Set default service for bare model names
 - `config-clear-default` - Clear default model
 - `config-set-pricing` - Configure input/output costs per model
 - `config-get-pricing` - View pricing information

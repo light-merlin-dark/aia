@@ -5,6 +5,21 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.16] - 2025-06-23
+
+### Improved
+- **Installation & Documentation**
+  - Simplified MCP installation process: users now run `aia install` instead of complex `claude mcp` commands
+  - Enhanced install command help text to highlight 4 most valuable MCP tools with concrete usage examples
+  - Updated README.md with accurate installation method and verified all 18 MCP tools documentation
+  - Added `config-set-default-service` tool to MCP tools documentation
+  - Improved onboarding experience with actionable guidance for immediate success
+
+### Internal
+- **API Design Decisions**
+  - Retained "config-" prefix for MCP commands to ensure namespace protection and tool categorization
+  - Updated project plan documentation with design rationale for future development sessions
+
 ## [0.8.15] - 2025-06-23
 
 ### Fixed
