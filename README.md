@@ -1,6 +1,6 @@
 # AIA
 
-**The Model Context Protocol (MCP) enabled CLI for parallel AI consultation.**
+**The Model Context Protocol (MCP) for parallel AI consultation.**
 
 Built from the ground up for seamless integration with Claude Code, Claude Desktop, and other AI tools that support MCP. AIA transforms how AI agents and developers consult multiple AI models by providing parallel queries, intelligent retry mechanisms, and a powerful plugin architecture.
 
@@ -34,15 +34,12 @@ Extend AIA with provider plugins:
 # Install AIA globally
 npm install -g @light-merlin-dark/aia
 
-# Add to Claude Code
-claude mcp add-json aia '{
+# Ensure installed correctly in Claude Code
+claude mcp remove aia 2>/dev/null || true && claude mcp add-json aia '{
   "type":"stdio",
   "command":"aia-mcp",
   "env":{"NODE_NO_WARNINGS":"1"}
 }'
-
-# Remove and add from Claude Code
-claude mcp remove aia
 ```
 
 ### Available MCP Tools

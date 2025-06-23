@@ -5,6 +5,15 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.13] - 2025-06-23
+
+### Added
+- **Install Command**
+  - New `aia install` command to easily set up AIA as an MCP server in Claude Code
+  - Automatically configures AIA with proper stdio settings and environment variables
+  - Provides helpful feedback and instructions after successful installation
+  - Detects if Claude Code CLI is not available and provides guidance
+
 ## [0.8.12] - 2025-06-20
 
 ### Fixed

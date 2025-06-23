@@ -3,6 +3,7 @@ import consultCommand from './consult';
 import resetCommand from './reset';
 import servicesCommand from './services';
 import servicesCostCommand from './services-cost';
+import installCommand from './install';
 import { configSetCommand } from './config-set';
 import { configGetCommand } from './config-get';
 import { configListCommand } from './config-list';
@@ -17,6 +18,7 @@ export const commands: Record<string, CommandSpec> = {
   // Alias for consult
   c: consultCommand,
   reset: resetCommand,
+  install: installCommand,
   // Use the enhanced services command that handles cost subcommands
   services: servicesCostCommand,
   // Config commands
