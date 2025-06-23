@@ -4,6 +4,8 @@
 
 Built from the ground up for seamless integration with Claude Code, Claude Desktop, and other AI tools that support MCP. AIA transforms how AI agents and developers consult multiple AI models by providing parallel queries, intelligent retry mechanisms, and a powerful plugin architecture.
 
+![AIA Terminal Preview](assets/terminal-preview.png)
+
 ## 🚀 Why AIA?
 
 ### Native MCP Integration

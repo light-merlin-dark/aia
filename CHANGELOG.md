@@ -5,6 +5,14 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.14] - 2025-06-23
+
+### Added
+- **Terminal Preview Image**
+  - Added terminal preview screenshot to README for better visual introduction
+  - Shows AIA installation process in Claude Code
+  - Helps users immediately understand what AIA looks like in action
+
 ## [0.8.13] - 2025-06-23
 
 ### Added
