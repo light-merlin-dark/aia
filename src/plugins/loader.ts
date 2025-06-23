@@ -1,4 +1,5 @@
 import { promises as fs } from 'fs';
+import * as fsSync from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { Plugin, AIProviderPlugin } from './types';
@@ -21,16 +22,104 @@ export class PluginLoader {
     if (pluginPaths) {
       this.pluginPaths = pluginPaths;
     } else {
-      // Get the module directory and resolve package root
-      const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-      const packageRoot = path.resolve(moduleDir, '..', '..');
+      // Get the package root using multiple fallback methods
+      const packageRoot = this.findPackageRoot();
       
       this.pluginPaths = [
         path.join(packageRoot, 'plugins'),                     // Built-in plugins (always available)
         path.join(process.env.HOME || '', '.aia', 'plugins'),  // User plugins
         path.join(process.cwd(), 'plugins')                    // Project-specific plugins (fallback)
       ];
+      
+      logger.debug(`Plugin paths: ${this.pluginPaths.join(', ')}`);
     }
+  }
+
+  private findPackageRoot(): string {
+    // Method 1: Use import.meta.url (works in most ES module contexts)
+    try {
+      const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+      const candidate1 = path.resolve(moduleDir, '..', '..');
+      
+      // Verify this is actually the package root by checking for package.json
+      if (this.isPackageRoot(candidate1)) {
+        logger.debug(`Found package root via import.meta.url: ${candidate1}`);
+        return candidate1;
+      }
+    } catch (error) {
+      logger.debug(`Failed to resolve package root via import.meta.url: ${error}`);
+    }
+    
+    // Method 2: Check if we're in a node_modules context (for global installs)
+    try {
+      const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+      // Look for patterns like: /path/to/node_modules/@scope/package-name/dist/plugins
+      // or: /path/to/node_modules/package-name/dist/plugins
+      const nodeModulesMatch = moduleDir.match(/(.+\/node_modules\/(?:@[^/]+\/)?[^/]+)/);
+      if (nodeModulesMatch) {
+        const candidate2 = nodeModulesMatch[1];
+        if (this.isPackageRoot(candidate2)) {
+          logger.debug(`Found package root via node_modules pattern: ${candidate2}`);
+          return candidate2;
+        }
+      }
+    } catch (error) {
+      logger.debug(`Failed to resolve package root via node_modules pattern: ${error}`);
+    }
+    
+    // Method 3: Search upward from current working directory
+    let currentDir = process.cwd();
+    while (currentDir !== path.dirname(currentDir)) {
+      if (this.isPackageRoot(currentDir)) {
+        logger.debug(`Found package root via cwd search: ${currentDir}`);
+        return currentDir;
+      }
+      currentDir = path.dirname(currentDir);
+    }
+    
+    // Method 4: Fallback to current working directory
+    logger.warn(`Could not find package root, falling back to current working directory: ${process.cwd()}`);
+    return process.cwd();
+  }
+
+  private isPackageRoot(dir: string): boolean {
+    try {
+      const packageJsonPath = path.join(dir, 'package.json');
+      const pluginsPath = path.join(dir, 'plugins');
+      
+      // Check if package.json exists and plugins directory exists
+      const hasPackageJson = this.fileExists(packageJsonPath);
+      const hasPluginsDir = this.fileExists(pluginsPath);
+      
+      if (hasPackageJson) {
+        // Also check if this is the ai-advisor package (supporting both scoped and unscoped names)
+        try {
+          const packageJson = JSON.parse(this.readFileSync(packageJsonPath));
+          const isAiAdvisor = packageJson.name === 'ai-advisor' || packageJson.name === '@light-merlin-dark/aia';
+          logger.debug(`Checking ${dir}: hasPackageJson=${hasPackageJson}, hasPluginsDir=${hasPluginsDir}, packageName=${packageJson.name}, isAiAdvisor=${isAiAdvisor}`);
+          return isAiAdvisor && hasPluginsDir;
+        } catch (error) {
+          logger.debug(`Failed to read package.json at ${packageJsonPath}: ${error}`);
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  private fileExists(path: string): boolean {
+    try {
+      fsSync.accessSync(path);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private readFileSync(path: string): string {
+    return fsSync.readFileSync(path, 'utf-8');
   }
 
   async loadPlugins(): Promise<PluginLoadResult[]> {

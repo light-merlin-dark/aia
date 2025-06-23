@@ -5,6 +5,16 @@ All notable changes to AIA will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.15] - 2025-06-23
+
+### Fixed
+- **Plugin Loading in Global Installations**
+  - Fixed critical issue where plugins failed to load when MCP server ran from other project directories
+  - Added `plugins/` directory to package.json files array to ensure plugin directories are included in npm package
+  - Enhanced plugin loader path resolution to properly handle scoped package names (@light-merlin-dark/aia)
+  - Improved node_modules detection pattern to support both scoped and unscoped package installations
+  - Plugin loading now works consistently across all execution contexts (development, global install, other projects)
+
 ## [0.8.14] - 2025-06-23
 
 ### Added
