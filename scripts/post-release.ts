@@ -1,0 +1,339 @@
+#!/usr/bin/env bun
+
+import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+interface ValidationResult {
+  step: string;
+  success: boolean;
+  message: string;
+}
+
+// Color output helpers
+const green = (text: string) => `\x1b[32m${text}\x1b[0m`;
+const red = (text: string) => `\x1b[31m${text}\x1b[0m`;
+const blue = (text: string) => `\x1b[34m${text}\x1b[0m`;
+const yellow = (text: string) => `\x1b[33m${text}\x1b[0m`;
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function validateNpmPublishWithRetry(maxRetries: number = 3, delayMs: number = 20000): Promise<ValidationResult> {
+  const packageJson = JSON.parse(
+    readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+  );
+  
+  const startTime = Date.now();
+  console.log(`⏰ Starting NPM version validation with ${delayMs/1000}s initial delay...`);
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`📡 Checking NPM registry (attempt ${attempt}/${maxRetries})...`);
+      
+      const npmVersion = execSync(
+        `npm view ${packageJson.name} version --registry https://npm.hyper.gdn`,
+        { encoding: 'utf-8' }
+      ).trim();
+      
+      // Ensure NPM version matches our local version (meaning it's higher than what we started with)
+      if (npmVersion === packageJson.version) {
+        const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+        return {
+          step: 'NPM Version Check',
+          success: true,
+          message: `NPM version: ${npmVersion}, Local version: ${packageJson.version} ✓ (took ${elapsedTime}s)`
+        };
+      }
+      
+      console.log(`   NPM: ${npmVersion}, Local: ${packageJson.version} - waiting for registry update...`);
+      
+      if (attempt < maxRetries) {
+        console.log(`⏳ Waiting ${delayMs/1000}s before next attempt...`);
+        await sleep(delayMs);
+      }
+      
+    } catch (error: any) {
+      console.log(`   Error checking NPM: ${error.message}`);
+      if (attempt < maxRetries) {
+        console.log(`⏳ Waiting ${delayMs/1000}s before retry...`);
+        await sleep(delayMs);
+      }
+    }
+  }
+  
+  const elapsedTime = Math.round((Date.now() - startTime) / 1000);
+  return {
+    step: 'NPM Version Check',
+    success: false,
+    message: `Failed to verify NPM version after ${maxRetries} attempts (${elapsedTime}s total). Registry may be slow to update.`
+  };
+}
+
+async function validateGlobalInstall(): Promise<ValidationResult> {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+    );
+    
+    // Check if package is already installed globally
+    let isInstalled = false;
+    let currentVersion = '';
+    try {
+      currentVersion = execSync(`npm list -g ${packageJson.name} --depth=0 --json --registry https://npm.hyper.gdn`, { encoding: 'utf-8' });
+      const listData = JSON.parse(currentVersion);
+      isInstalled = !!listData.dependencies?.[packageJson.name];
+    } catch {
+      // Package not installed globally
+      isInstalled = false;
+    }
+    
+    if (isInstalled) {
+      console.log('📦 Uninstalling existing global installation...');
+      execSync(`npm uninstall -g ${packageJson.name}`, { stdio: 'inherit' });
+    }
+    
+    console.log('📦 Installing fresh global installation from private npm...');
+    execSync(`npm install -g ${packageJson.name}@latest --registry https://npm.hyper.gdn`, { stdio: 'inherit' });
+    return {
+      step: 'Fresh Global Installation',
+      success: true,
+      message: 'Package installed globally from private npm successfully'
+    };
+  } catch (error: any) {
+    return {
+      step: 'Global Installation/Update',
+      success: false,
+      message: `Error: ${error.message}`
+    };
+  }
+}
+
+async function validateCLI(): Promise<ValidationResult> {
+  try {
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+    );
+    
+    const binName = Object.keys(packageJson.bin)[0];
+    
+    // Try running CLI with --help to see if it shows help (indicates CLI is working)
+    try {
+      const helpOutput = execSync(`${binName} --help 2>/dev/null`, { 
+        encoding: 'utf-8',
+        shell: true 
+      }).trim();
+      
+      // Check for expected help content
+      if (helpOutput.includes('consult') && helpOutput.includes('config') && 
+          (helpOutput.includes('Usage') || helpOutput.includes('Commands') || helpOutput.includes('Options'))) {
+        return {
+          step: 'CLI Execution',
+          success: true,
+          message: 'CLI executes and shows help correctly'
+        };
+      } else {
+        return {
+          step: 'CLI Execution',
+          success: false,
+          message: `CLI runs but output is unexpected: ${helpOutput.substring(0, 100)}...`
+        };
+      }
+    } catch (error: any) {
+      return {
+        step: 'CLI Execution',
+        success: false,
+        message: `CLI execution failed: ${error.message}`
+      };
+    }
+  } catch (error: any) {
+    return {
+      step: 'CLI Execution',
+      success: false,
+      message: `Error: ${error.message}`
+    };
+  }
+}
+
+async function runProductionTest(): Promise<ValidationResult> {
+  try {
+    console.log('🧪 Running production API test...');
+    
+    // Get API key from m env
+    let apiKey = '';
+    try {
+      apiKey = execSync('m env AIA_OPENROUTER_API_KEY', { encoding: 'utf-8' }).trim();
+    } catch {
+      // Fallback to standard env var
+      apiKey = process.env.AIA_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || '';
+    }
+    
+    if (!apiKey) {
+      return {
+        step: 'Production API Test',
+        success: false,
+        message: 'No API key found (set with: m env AIA_OPENROUTER_API_KEY=your-key)'
+      };
+    }
+    
+    // Configure the CLI using its own commands
+    console.log('  Configuring OpenRouter service...');
+    execSync(`aia config-set openrouter apiKey "${apiKey}"`, { stdio: 'pipe' });
+    execSync(`aia config-set openrouter endpoint "https://openrouter.ai/api/v1"`, { stdio: 'pipe' });
+    execSync('aia config-add-model openrouter google/gemini-2.5-pro', { stdio: 'pipe' });
+    execSync('aia config-add-model openrouter google/gemini-2.5-flash', { stdio: 'pipe' });
+    execSync('aia config-set-default-service openrouter', { stdio: 'pipe' });
+    execSync('aia config-set-default openrouter/google/gemini-2.5-pro', { stdio: 'pipe' });
+    
+    // Test simple prompt with real API
+    const testOutput = execSync('aia consult "This is a post-release test. Respond with: Test successful" --models openrouter/google/gemini-2.5-pro --json 2>/dev/null', {
+      encoding: 'utf-8',
+      timeout: 30000,
+      shell: true
+    });
+    
+    // Extract JSON from output (skip log lines)
+    const lines = testOutput.split('\n');
+    const jsonLine = lines.find(line => line.trim().startsWith('{'));
+    if (!jsonLine) {
+      throw new Error('No JSON output found');
+    }
+    
+    const response = JSON.parse(jsonLine);
+    
+    if (response.responses && response.responses.length > 0 && 
+        response.responses[0].content.includes('Test successful')) {
+      return {
+        step: 'Production API Test',
+        success: true,
+        message: 'Real API call with google/gemini-2.5-pro successful'
+      };
+    } else {
+      return {
+        step: 'Production API Test',
+        success: false,
+        message: 'API call succeeded but unexpected response'
+      };
+    }
+  } catch (error: any) {
+    return {
+      step: 'Production API Test',
+      success: false,
+      message: `Error: ${error.message}`
+    };
+  }
+}
+
+async function runFileAttachmentTest(): Promise<ValidationResult> {
+  try {
+    console.log('📎 Running file attachment test...');
+    
+    // Config should already be set from production test
+    // Create temporary test file
+    const tempFile = '/tmp/aia-test-file.js';
+    const testContent = `// AIA Test File
+function hello(name) {
+  return \`Hello, \${name}!\`;
+}
+module.exports = { hello };`;
+    
+    require('fs').writeFileSync(tempFile, testContent);
+    
+    // Test file attachment using configured service
+    const testOutput = execSync(`aia consult "What function is exported in this file?" --models openrouter/google/gemini-2.5-pro -f ${tempFile} --json 2>/dev/null`, {
+      encoding: 'utf-8',
+      timeout: 30000,
+      shell: true
+    });
+    
+    // Extract JSON from output (skip log lines)
+    const lines = testOutput.split('\n');
+    const jsonLine = lines.find(line => line.trim().startsWith('{'));
+    if (!jsonLine) {
+      throw new Error('No JSON output found');
+    }
+    
+    const response = JSON.parse(jsonLine);
+    
+    // Clean up temp file
+    require('fs').unlinkSync(tempFile);
+    
+    if (response.responses && response.responses.length > 0 && 
+        response.responses[0].content.toLowerCase().includes('hello')) {
+      return {
+        step: 'File Attachment Test',
+        success: true,
+        message: 'File attachment and analysis successful'
+      };
+    } else {
+      return {
+        step: 'File Attachment Test',
+        success: false,
+        message: 'File attachment test failed - model did not analyze file content'
+      };
+    }
+  } catch (error: any) {
+    // Clean up temp file on error
+    try {
+      require('fs').unlinkSync('/tmp/aia-test-file.js');
+    } catch {}
+    
+    return {
+      step: 'File Attachment Test',
+      success: false,
+      message: `Error: ${error.message}`
+    };
+  }
+}
+
+async function main() {
+  console.log(blue('🔍 Running post-release validation...\n'));
+  
+  const validations = [
+    await validateNpmPublishWithRetry(),
+    await validateGlobalInstall(),
+    await validateCLI(),
+    await runProductionTest(),
+    await runFileAttachmentTest(),
+  ];
+  
+  console.log('\n' + blue('📊 Validation Results:'));
+  console.log('='.repeat(50));
+  
+  validations.forEach(result => {
+    const icon = result.success ? green('✅') : red('❌');
+    const statusColor = result.success ? green : red;
+    console.log(`${icon} ${statusColor(result.step)}`);
+    console.log(`   ${result.message}`);
+  });
+  
+  const allPassed = validations.every(v => v.success);
+  const passedCount = validations.filter(v => v.success).length;
+  const totalCount = validations.length;
+  
+  console.log('\n' + '='.repeat(50));
+  console.log(`Summary: ${passedCount}/${totalCount} validations passed`);
+  
+  if (allPassed) {
+    console.log('\n' + green('🎉 All validations passed!'));
+    console.log(yellow('\nNext steps:'));
+    console.log('1. Test the MCP integration with Claude Desktop');
+    console.log('2. Update documentation if needed');
+    console.log('3. Create a GitHub release');
+  } else {
+    console.log('\n' + red('❌ Some validations failed!'));
+    console.log(yellow('\nTroubleshooting:'));
+    console.log('1. Check npm publish logs');
+    console.log('2. Verify package.json bin paths');
+    console.log('3. Ensure all dependencies are included');
+    console.log('4. NPM registry updates can take up to 2 minutes');
+    process.exit(1);
+  }
+}
+
+// Run validation
+main().catch((error) => {
+  console.error(red('❌ Validation error:'), error.message);
+  process.exit(1);
+});

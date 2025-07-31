@@ -9,8 +9,8 @@ build/
 *.js.map
 *.d.ts
 
-# Scripts directory - development only
-scripts/
+# Scripts directory - development only (except release.ts which is needed in package)
+# scripts/
 
 # Logs and data
 .data/
