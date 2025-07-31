@@ -61,6 +61,12 @@ export class PluginRegistry implements IPluginRegistry {
       throw new Error('Plugin must have name and version');
     }
     
+    // Check if already registered
+    if (this.plugins.has(plugin.name)) {
+      this.logger.debug(`Plugin ${plugin.name} already registered, skipping`);
+      return;
+    }
+    
     // Check dependencies
     if (plugin.dependencies) {
       for (const dep of plugin.dependencies) {

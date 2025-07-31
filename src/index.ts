@@ -1,43 +1,83 @@
 #!/usr/bin/env bun
 import { createCLI } from '@merlin/cli';
 
+
+// Import all commands eagerly for a snappy CLI experience
+import consultCmd from './commands/consult.js';
+import configAddModelCmd from './commands/config-add-model.js';
+import configClearDefaultCmd from './commands/config-clear-default.js';
+import configGetCmd from './commands/config-get.js';
+import configListCmd from './commands/config-list.js';
+import configRemoveCmd from './commands/config-remove.js';
+import configSetDefaultServiceCmd from './commands/config-set-default-service.js';
+import configSetDefaultCmd from './commands/config-set-default.js';
+import configSetCmd from './commands/config-set.js';
+import installCmd from './commands/install.js';
+import resetCmd from './commands/reset.js';
+import servicesCmd from './commands/services.js';
+import servicesCostCmd from './commands/services-cost.js';
+
 const cli = createCLI({
   name: 'aia',
   version: '0.8.19',
   description: 'AI Advisor - Parallel AI model consultation CLI',
   commands: {
-    // Lazy load commands for better performance
-    consult: () => import('./commands/consult.js').then(m => m.default),
-    'config-add-model': () => import('./commands/config-add-model.js').then(m => m.default),
-    'config-clear-default': () => import('./commands/config-clear-default.js').then(m => m.default),
-    'config-get': () => import('./commands/config-get.js').then(m => m.default),
-    'config-list': () => import('./commands/config-list.js').then(m => m.default),
-    'config-remove': () => import('./commands/config-remove.js').then(m => m.default),
-    'config-set-default-service': () => import('./commands/config-set-default-service.js').then(m => m.default),
-    'config-set-default': () => import('./commands/config-set-default.js').then(m => m.default),
-    'config-set': () => import('./commands/config-set.js').then(m => m.default),
-    install: () => import('./commands/install.js').then(m => m.default),
-    reset: () => import('./commands/reset.js').then(m => m.default),
-    services: () => import('./commands/services.js').then(m => m.default),
-    'services-cost': () => import('./commands/services-cost.js').then(m => m.default)
+    consult: consultCmd,
+    'config-add-model': configAddModelCmd,
+    'config-clear-default': configClearDefaultCmd,
+    'config-get': configGetCmd,
+    'config-list': configListCmd,
+    'config-remove': configRemoveCmd,
+    'config-set-default-service': configSetDefaultServiceCmd,
+    'config-set-default': configSetDefaultCmd,
+    'config-set': configSetCmd,
+    install: installCmd,
+    reset: resetCmd,
+    services: servicesCmd,
+    'services-cost': servicesCostCmd
   }
 });
 
 // Add custom services initialization
 cli.bootstrap = async (registry) => {
-  // Initialize plugin registry
-  const { getPluginRegistry } = await import('./plugins/registry.js');
-  const pluginRegistry = getPluginRegistry();
-  registry.register('pluginRegistry', pluginRegistry);
+  // Check if this is just a help display (no command or help command)
+  const args = process.argv.slice(2);
+  const isHelp = args.length === 0 || args[0] === 'help';
   
-  // Initialize config manager
-  const { getConfig } = await import('./config/manager.js');
-  const config = await getConfig();
-  registry.register('config', config);
+  if (isHelp) {
+    // Set quiet mode for help display
+    process.env.AIA_QUIET = 'true';
+  }
   
-  // Initialize the plugin registry with config
-  await pluginRegistry.initialize(config);
+  try {
+    // Initialize plugin registry
+    const { getPluginRegistry } = await import('./plugins/registry.js');
+    const pluginRegistry = getPluginRegistry();
+    registry.register('pluginRegistry', pluginRegistry);
+    
+    // Initialize config manager
+    const { getConfig } = await import('./config/manager.js');
+    const config = await getConfig();
+    registry.register('config', config);
+    
+    // Initialize the plugin registry with config
+    await pluginRegistry.initialize(config);
+  } finally {
+    if (isHelp) {
+      // Restore normal logging after initialization
+      delete process.env.AIA_QUIET;
+    }
+  }
 };
 
-// Run the CLI
-cli.run();
+
+// Handle help display
+if (process.argv.length <= 2 || process.argv[2] === 'help') {
+  // Import help module dynamically to show custom help
+  import('./help.js').then(({ showHelp }) => {
+    showHelp(process.argv[3]);
+  });
+} else {
+  // Run the CLI
+  cli.run();
+}

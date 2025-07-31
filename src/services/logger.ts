@@ -16,6 +16,13 @@ export class Logger {
   }
   
   info(message: string, ...args: any[]): void {
+    // Suppress info logs during help display or when AIA_QUIET is set
+    const cliArgs = process.argv.slice(2);
+    const isHelp = cliArgs.length === 0 || cliArgs[0] === 'help' || cliArgs[0] === '--help';
+    
+    if (process.env.AIA_QUIET === 'true' || isHelp) {
+      return;
+    }
     console.log(chalk.blue(this.formatMessage('INFO', message, ...args)));
   }
   

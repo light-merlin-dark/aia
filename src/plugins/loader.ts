@@ -25,11 +25,25 @@ export class PluginLoader {
       // Get the package root using multiple fallback methods
       const packageRoot = this.findPackageRoot();
       
-      this.pluginPaths = [
+      // Create unique plugin paths
+      const paths = [
         path.join(packageRoot, 'plugins'),                     // Built-in plugins (always available)
         path.join(process.env.HOME || '', '.aia', 'plugins'),  // User plugins
         path.join(process.cwd(), 'plugins')                    // Project-specific plugins (fallback)
       ];
+      
+      // Deduplicate paths by resolving them and keeping unique ones
+      const uniquePaths = new Set<string>();
+      for (const p of paths) {
+        try {
+          const resolved = path.resolve(p);
+          uniquePaths.add(resolved);
+        } catch (error) {
+          // Skip invalid paths
+        }
+      }
+      
+      this.pluginPaths = Array.from(uniquePaths);
       
       logger.debug(`Plugin paths: ${this.pluginPaths.join(', ')}`);
     }
@@ -132,9 +146,14 @@ export class PluginLoader {
         
         for (const dir of pluginDirs) {
           const result = await this.loadPlugin(dir);
-          if (result) {
-            results.push(result);
-            this.loadedPlugins.set(result.plugin.name, result);
+          if (result && !result.error) {
+            // Check if plugin already loaded (prevent duplicates)
+            if (!this.loadedPlugins.has(result.plugin.name)) {
+              results.push(result);
+              this.loadedPlugins.set(result.plugin.name, result);
+            } else {
+              logger.debug(`Plugin ${result.plugin.name} already loaded, skipping duplicate from ${dir}`);
+            }
           }
         }
       } catch (error) {
