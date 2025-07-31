@@ -184,10 +184,10 @@ async function runProductionTest(): Promise<ValidationResult> {
     execSync('aia config-add-model openrouter google/gemini-2.5-pro', { stdio: 'pipe' });
     execSync('aia config-add-model openrouter google/gemini-2.5-flash', { stdio: 'pipe' });
     execSync('aia config-set-default-service openrouter', { stdio: 'pipe' });
-    execSync('aia config-set-default openrouter/google/gemini-2.5-pro', { stdio: 'pipe' });
+    execSync('aia config-set-default openrouter/google/gemini-2.5-flash', { stdio: 'pipe' });
     
-    // Test simple prompt with real API
-    const testOutput = execSync('aia consult "This is a post-release test. Respond with: Test successful" --models openrouter/google/gemini-2.5-pro --json 2>/dev/null', {
+    // Test simple prompt with real API using the faster flash model
+    const testOutput = execSync('aia consult "This is a post-release test. Respond with: Test successful" --models openrouter/google/gemini-2.5-flash --json 2>/dev/null', {
       encoding: 'utf-8',
       timeout: 30000,
       shell: true
@@ -207,7 +207,7 @@ async function runProductionTest(): Promise<ValidationResult> {
       return {
         step: 'Production API Test',
         success: true,
-        message: 'Real API call with google/gemini-2.5-pro successful'
+        message: 'Real API call with google/gemini-2.5-flash successful'
       };
     } else {
       return {
@@ -241,7 +241,7 @@ module.exports = { hello };`;
     require('fs').writeFileSync(tempFile, testContent);
     
     // Test file attachment using configured service
-    const testOutput = execSync(`aia consult "What function is exported in this file?" --models openrouter/google/gemini-2.5-pro -f ${tempFile} --json 2>/dev/null`, {
+    const testOutput = execSync(`aia consult "What function is exported in this file?" --models openrouter/google/gemini-2.5-flash -f ${tempFile} --json 2>/dev/null`, {
       encoding: 'utf-8',
       timeout: 30000,
       shell: true
