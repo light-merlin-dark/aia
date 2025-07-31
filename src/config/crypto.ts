@@ -40,7 +40,11 @@ function getOrCreateKey(keyPath: string): Buffer {
 /**
  * Encrypt data using AES-256-GCM
  */
-export async function encrypt(data: string, keyPath: string): Promise<string> {
+export function encrypt(data: string, keyPath?: string): string {
+  if (!keyPath) {
+    // For simple testing/env-based config, just return base64
+    return Buffer.from(data).toString('base64');
+  }
   const key = getOrCreateKey(keyPath);
   const iv = randomBytes(IV_LENGTH);
   const salt = randomBytes(SALT_LENGTH);
@@ -66,7 +70,11 @@ export async function encrypt(data: string, keyPath: string): Promise<string> {
 /**
  * Decrypt data using AES-256-GCM
  */
-export async function decrypt(encryptedData: string, keyPath: string): Promise<string> {
+export function decrypt(encryptedData: string, keyPath?: string): string {
+  if (!keyPath) {
+    // For simple testing/env-based config, just decode base64
+    return Buffer.from(encryptedData, 'base64').toString('utf-8');
+  }
   if (!existsSync(keyPath)) {
     throw new Error('Encryption key not found');
   }

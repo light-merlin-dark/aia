@@ -184,13 +184,29 @@ export class SQLiteConfigManager {
       // Check if we have any services configured
       const services = await this.runQuery('SELECT COUNT(*) as count FROM services');
       if (services[0].count === 0) {
-        // No services configured, run setup wizard
+        // Check for environment-based configuration first
+        const envConfig = await this.createConfigFromEnvironment();
+        if (envConfig) {
+          logger.info('No services configured, using environment variables');
+          await this.saveConfig(envConfig);
+          return envConfig;
+        }
+        
+        // No env config, run setup wizard
         logger.info('No services configured, running setup wizard');
         const config = await runOnboardingWizard();
         await this.saveConfig(config);
         return config;
       }
     } catch (error) {
+      // Check for environment-based configuration first
+      const envConfig = await this.createConfigFromEnvironment();
+      if (envConfig) {
+        logger.info('Database not ready, using environment variables');
+        await this.saveConfig(envConfig);
+        return envConfig;
+      }
+      
       logger.warn('Database not ready, running setup wizard');
       const config = await runOnboardingWizard();
       await this.saveConfig(config);
@@ -208,7 +224,7 @@ export class SQLiteConfigManager {
     const serviceRows = await this.runQuery('SELECT * FROM services');
     for (const service of serviceRows) {
       config.services[service.name] = {
-        apiKey: decrypt(service.api_key),
+        apiKey: decrypt(service.api_key, this.keyPath),
         endpoint: service.endpoint || undefined
       };
 
@@ -300,7 +316,7 @@ export class SQLiteConfigManager {
         if (serviceName === 'default') continue;
 
         // Encrypt API key
-        const encryptedApiKey = encrypt(serviceConfig.apiKey);
+        const encryptedApiKey = encrypt(serviceConfig.apiKey, this.keyPath);
         
         await this.runStatement(
           'INSERT INTO services (name, api_key, endpoint) VALUES (?, ?, ?)',
@@ -397,6 +413,82 @@ export class SQLiteConfigManager {
       delete this.configCache.defaultModel;
       delete this.configCache.defaultModels;
     }
+  }
+
+  private async createConfigFromEnvironment(): Promise<AIAdvisorConfig | null> {
+    // Check for OpenRouter API key
+    const openrouterKey = process.env.AIA_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    
+    // If no environment variables are set, return null
+    if (!openrouterKey && !openaiKey && !anthropicKey) {
+      return null;
+    }
+    
+    logger.info('Creating configuration from environment variables');
+    
+    const config: AIAdvisorConfig = {
+      services: {},
+      plugins: {
+        enabled: [],
+        disabled: []
+      },
+      maxRetries: 2,
+      timeout: 60000
+    };
+    
+    // Configure OpenRouter if API key is present
+    if (openrouterKey) {
+      config.services.openrouter = {
+        apiKey: openrouterKey,
+        models: ['google/gemini-2.5-pro', 'google/gemini-2.5-flash'],
+        endpoint: 'https://openrouter.ai/api/v1'
+      };
+      config.plugins!.enabled!.push('openrouter');
+      
+      // Set as default service
+      config.services.default = {
+        apiKey: '',
+        service: 'openrouter'
+      };
+    }
+    
+    // Configure OpenAI if API key is present
+    if (openaiKey) {
+      config.services.openai = {
+        apiKey: openaiKey,
+        models: ['gpt-4o', 'gpt-4o-mini']
+      };
+      config.plugins!.enabled!.push('openai');
+      
+      // Set as default if no other default
+      if (!config.services.default) {
+        config.services.default = {
+          apiKey: '',
+          service: 'openai'
+        };
+      }
+    }
+    
+    // Configure Anthropic if API key is present
+    if (anthropicKey) {
+      config.services.anthropic = {
+        apiKey: anthropicKey,
+        models: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022']
+      };
+      config.plugins!.enabled!.push('anthropic');
+      
+      // Set as default if no other default
+      if (!config.services.default) {
+        config.services.default = {
+          apiKey: '',
+          service: 'anthropic'
+        };
+      }
+    }
+    
+    return config;
   }
 
   public async close(): Promise<void> {
