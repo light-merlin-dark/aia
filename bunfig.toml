@@ -1,0 +1,6 @@
+[test]
+# Increase concurrency for faster test execution
+timeout = "30s"
+
+[run]
+silent = false

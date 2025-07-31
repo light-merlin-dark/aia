@@ -1,0 +1,17 @@
+{
+  "name": "@aia/anthropic-plugin",
+  "version": "1.0.0",
+  "description": "Anthropic Claude provider plugin for AIA",
+  "main": "index.js",
+  "type": "module",
+  "aiAdvisor": {
+    "type": "plugin",
+    "provider": "anthropic"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.24.0"
+  },
+  "peerDependencies": {
+    "aia": "*"
+  }
+}

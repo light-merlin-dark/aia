@@ -1,0 +1,15 @@
+{
+  "name": "@aia/openrouter-plugin",
+  "version": "1.0.0",
+  "description": "OpenRouter multi-model provider plugin for AIA",
+  "main": "index.js",
+  "type": "module",
+  "aiAdvisor": {
+    "type": "plugin",
+    "provider": "openrouter"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "aia": "*"
+  }
+}

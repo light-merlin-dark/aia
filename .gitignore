@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Build output
+dist/
+build/
+*.js
+*.js.map
+*.d.ts
+
+# Scripts directory - development only
+scripts/
+
+# Logs and data
+.data/
+logs/
+*.log
+
+# Environment files
+.env
+.env.production
+
+# Developer files
+Makefile
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+.zed/
+
+# Docs
+docs/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.temp
+
+# Claude
+CLAUDE.MD
+CLAUDE.md
+_blueprints
+*.test
+test.dry
+debug.test
+options.test
+dryrun.final
+final.dryrun.test
+blueprints
+chat.md
+.blueprints
+.chat.md
