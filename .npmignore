@@ -1,0 +1,53 @@
+# Development files
+node_modules/
+test/
+tests/
+*.test.ts
+*.test.js
+coverage/
+.vitest/
+
+# Source control
+.git/
+.gitignore
+
+# Build artifacts
+dist/
+*.tsbuildinfo
+tsconfig.json
+tsconfig.*.json
+
+# Development config
+.eslintrc*
+.prettierrc*
+bunfig.toml
+Makefile
+
+# Documentation
+docs/
+*.md
+!README.md
+!CHANGELOG.md
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.*
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Scripts we don't need in package
+scripts/
+!scripts/release.ts
+
+# Other
+blueprints
+chat.md
+CLAUDE.md
+assets/
