@@ -3,7 +3,7 @@ import { createCLI } from '@merlin/cli';
 
 const cli = createCLI({
   name: 'aia',
-  version: '0.8.18',
+  version: '0.8.19',
   description: 'AI Advisor - Parallel AI model consultation CLI',
   commands: {
     // Lazy load commands for better performance
