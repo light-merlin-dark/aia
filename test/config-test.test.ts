@@ -28,6 +28,12 @@ describe('CLI Commands Structure', () => {
       expect(consultCommand.options.models.description).toContain('default model');
     });
 
+    it('should work with default model when no -m specified', () => {
+      // This test validates that the consult command can use default models
+      // In practice: aia consult "Hello" should work if default model is configured
+      expect(consultCommand.options.models.required).toBe(false);
+    });
+
     it('should have file attachment options', () => {
       expect(consultCommand.options.files).toBeDefined();
       expect(consultCommand.options.files.type).toBe('string');

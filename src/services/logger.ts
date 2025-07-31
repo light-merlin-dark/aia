@@ -24,11 +24,12 @@ export class Logger {
       return;
     }
     
-    // Suppress info logs during help display or when AIA_QUIET is set
+    // Suppress all info logs unless verbose is explicitly enabled
     const cliArgs = process.argv.slice(2);
     const isHelp = cliArgs.length === 0 || cliArgs[0] === 'help' || cliArgs[0] === '--help';
+    const isVerbose = cliArgs.includes('--verbose') || cliArgs.includes('-v');
     
-    if (process.env.AIA_QUIET === 'true' || isHelp) {
+    if (process.env.AIA_QUIET === 'true' || isHelp || !isVerbose) {
       return;
     }
     console.log(chalk.blue(this.formatMessage('INFO', message, ...args)));

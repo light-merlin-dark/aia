@@ -90,8 +90,13 @@ export default createCommand({
       // Parse models - use default if not specified
       let models: string[] = [];
       
-      if (options.models) {
-        models = options.models.split(',').map((m: string) => m.trim());
+      // Check both 'models' and 'm' for backward compatibility
+      const modelOption = options.models || options.m;
+      if (modelOption) {
+        models = modelOption.split(',').map((m: string) => m.trim());
+        if (verbose) {
+          logger.info(`Using specified models: ${models.join(', ')}`);
+        }
       } else {
         // Use default model from config
         const defaultModel = config.defaultModel;

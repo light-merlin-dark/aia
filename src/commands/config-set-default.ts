@@ -62,9 +62,9 @@ export default createCommand({
         throw new Error(`Model '${model}' not found`);
       }
       
-      // Set as default
-      config.defaultModel = foundModel!;
-      config.defaultModels = [foundModel!];
+      // Set as default with service prefix
+      config.defaultModel = `${foundService}/${foundModel!}`;
+      config.defaultModels = [`${foundService}/${foundModel!}`];
       
       // Enable the plugin if not already enabled
       if (!config.plugins) {
