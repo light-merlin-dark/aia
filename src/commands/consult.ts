@@ -32,8 +32,8 @@ export default createCommand({
     models: {
       type: 'string',
       flag: 'm',
-      description: 'Models to consult (comma-separated)',
-      required: true
+      description: 'Models to consult (comma-separated). If not specified, uses default model',
+      required: false
     },
     files: {
       type: 'string', 
@@ -87,26 +87,45 @@ export default createCommand({
       const config = registry.get('config');
       const pluginRegistry = registry.get('pluginRegistry');
 
-      // Parse models
-      const models = options.models.split(',').map((m: string) => m.trim());
+      // Parse models - use default if not specified
+      let models: string[] = [];
+      
+      if (options.models) {
+        models = options.models.split(',').map((m: string) => m.trim());
+      } else {
+        // Use default model from config
+        const defaultModel = config.defaultModel;
+        
+        if (defaultModel) {
+          models = [defaultModel];
+          if (verbose) {
+            logger.info(`Using default model: ${defaultModel}`);
+          }
+        } else {
+          // Show available models if no default is set
+          const availableServices = Object.keys(config.services).filter(s => s !== 'default');
+          const serviceModels: string[] = [];
+          
+          // Collect all available models
+          for (const service of availableServices) {
+            const svcConfig = config.services[service];
+            if (svcConfig.models && svcConfig.models.length > 0) {
+              serviceModels.push(...svcConfig.models.map(m => `${service}/${m}`));
+            }
+          }
+          
+          throw new Error(
+            `No models specified and no default model configured.\n` +
+            `Available models:\n${serviceModels.map(m => `  ${m}`).join('\n')}\n\n` +
+            `Options:\n` +
+            `  1. Set a default: aia config-set-default <service/model>\n` +
+            `  2. Specify models: aia consult "your prompt" -m <model-name>`
+          );
+        }
+      }
 
       if (models.length === 0) {
-        const availableServices = Object.keys(config.services).filter(s => s !== 'default');
-        const serviceModels: string[] = [];
-        
-        // Collect all available models
-        for (const service of availableServices) {
-          const svcConfig = config.services[service];
-          if (svcConfig.models && svcConfig.models.length > 0) {
-            serviceModels.push(...svcConfig.models.map(m => `${service}/${m}`));
-          }
-        }
-        
-        throw new Error(
-          `No models specified. You must specify at least one model using -m or --models.\n` +
-          `Available models:\n${serviceModels.map(m => `  ${m}`).join('\n')}\n` +
-          `Example: aia consult "your prompt" -m model-name`
-        );
+        throw new Error('No valid models found');
       }
 
       // Parse files and directories

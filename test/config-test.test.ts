@@ -20,11 +20,12 @@ describe('CLI Commands Structure', () => {
       expect(consultCommand.args.prompt.required).toBe(false);
     });
 
-    it('should have required models option', () => {
+    it('should have models option that defaults when not specified', () => {
       expect(consultCommand.options.models).toBeDefined();
       expect(consultCommand.options.models.type).toBe('string');
       expect(consultCommand.options.models.flag).toBe('m');
-      expect(consultCommand.options.models.required).toBe(true);
+      expect(consultCommand.options.models.required).toBe(false);
+      expect(consultCommand.options.models.description).toContain('default model');
     });
 
     it('should have file attachment options', () => {

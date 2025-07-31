@@ -16,6 +16,14 @@ export class Logger {
   }
   
   info(message: string, ...args: any[]): void {
+    // Suppress plugin loading logs for a cleaner CLI experience
+    if (message.includes('Loaded plugin') || 
+        message.includes('Registered plugin') || 
+        message.includes('plugin loaded successfully') ||
+        message.includes('Enabled plugin')) {
+      return;
+    }
+    
     // Suppress info logs during help display or when AIA_QUIET is set
     const cliArgs = process.argv.slice(2);
     const isHelp = cliArgs.length === 0 || cliArgs[0] === 'help' || cliArgs[0] === '--help';
