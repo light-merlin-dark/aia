@@ -298,8 +298,8 @@ aia/
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT
 
-## Contributing
+---
 
-Contributions welcome! Please submit a Pull Request.
+Built by [@EnchantedRobot](https://x.com/EnchantedRobot)
