@@ -20,7 +20,7 @@ export default createCommand({
   options: {
     force: {
       type: 'boolean',
-      flag: 'f',
+      alias: 'f',
       description: 'Skip confirmation prompt'
     }
   },

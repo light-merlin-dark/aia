@@ -31,18 +31,18 @@ export default createCommand({
   options: {
     models: {
       type: 'string',
-      flag: 'm',
+      alias: 'm',
       description: 'Models to consult (comma-separated). If not specified, uses default model',
       required: false
     },
     files: {
-      type: 'string', 
-      flag: 'f',
+      type: 'string',
+      alias: 'f',
       description: 'Files to attach to the prompt (comma-separated)'
     },
     dirs: {
       type: 'string',
-      flag: 'd', 
+      alias: 'd',
       description: 'Directories to attach (recursive, comma-separated)'
     },
     json: {
@@ -55,7 +55,7 @@ export default createCommand({
     },
     verbose: {
       type: 'boolean',
-      flag: 'v',
+      alias: 'v',
       description: 'Enable verbose output'
     }
   },
@@ -84,8 +84,8 @@ export default createCommand({
       }
 
       // Get configuration and plugin registry from bootstrap
-      const config = registry.get('config');
-      const pluginRegistry = registry.get('pluginRegistry');
+      const config = registry.get('config') as any;
+      const pluginRegistry = registry.get('pluginRegistry' as any) as any;
 
       // Parse models - use default if not specified
       let models: string[] = [];
@@ -115,7 +115,7 @@ export default createCommand({
           for (const service of availableServices) {
             const svcConfig = config.services[service];
             if (svcConfig.models && svcConfig.models.length > 0) {
-              serviceModels.push(...svcConfig.models.map(m => `${service}/${m}`));
+              serviceModels.push(...svcConfig.models.map((m: string) => `${service}/${m}`));
             }
           }
           
@@ -180,15 +180,15 @@ export default createCommand({
               cost.inputTokens,
               cost.outputTokens,
               {
-                inputCostPer1M: cost.inputCostPer1M || 0,
-                outputCostPer1M: cost.outputCostPer1M || 0
+                inputCostPer1M: 0,
+                outputCostPer1M: 0
               }
             );
-            
+
             enhancedCosts.push({
               ...cost,
               formattedCost: costResult.formattedCost,
-              totalCost: costResult.totalCost
+              totalCost: cost.totalCost
             });
           } catch (error) {
             enhancedCosts.push(cost);
@@ -210,9 +210,9 @@ export default createCommand({
             console.log(response.content);
             
             // Display cost if available
-            const cost = enhancedCosts.find(c => c.model === response.model && c.provider === response.provider);
+            const cost = enhancedCosts.find((c: any) => c.model === response.model && c.provider === response.provider);
             if (cost) {
-              console.log(chalk.gray(`\nCost: ${cost.formattedCost || tokenizer.formatCost(cost.totalCost)} (${cost.inputTokens} in, ${cost.outputTokens} out)`));
+              console.log(chalk.gray(`\nCost: ${(cost as any).formattedCost || tokenizer.formatCost(cost.totalCost)} (${cost.inputTokens} in, ${cost.outputTokens} out)`));
             }
             
             if (verbose && response.metadata) {

@@ -53,12 +53,12 @@ cli.bootstrap = async (registry) => {
     // Initialize plugin registry
     const { getPluginRegistry } = await import('./plugins/registry.js');
     const pluginRegistry = getPluginRegistry();
-    registry.register('pluginRegistry', pluginRegistry);
-    
+    (registry as any).register('pluginRegistry', pluginRegistry);
+
     // Initialize config manager
     const { getConfig } = await import('./config/manager.js');
     const config = await getConfig();
-    registry.register('config', config);
+    (registry as any).register('config', config);
     
     // Initialize the plugin registry with config
     await pluginRegistry.initialize(config);

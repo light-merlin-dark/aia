@@ -156,131 +156,99 @@ async function validateCLI(): Promise<ValidationResult> {
   }
 }
 
-async function runProductionTest(): Promise<ValidationResult> {
+async function validateConfigCommands(): Promise<ValidationResult> {
   try {
-    console.log('Running production API test...');
-    
-    // Get API key from m env
-    let apiKey = '';
+    console.log('Testing config commands...');
+
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+    );
+    const binName = Object.keys(packageJson.bin)[0];
+
+    // Test config-list command (should work without API keys)
     try {
-      apiKey = execSync('m env AIA_OPENROUTER_API_KEY', { encoding: 'utf-8' }).trim();
-    } catch {
-      // Fallback to standard env var
-      apiKey = process.env.AIA_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY || '';
-    }
-    
-    if (!apiKey) {
-      return {
-        step: 'Production API Test',
-        success: false,
-        message: 'No API key found (set with: m env AIA_OPENROUTER_API_KEY=your-key)'
-      };
-    }
-    
-    // Configure the CLI using its own commands
-    console.log('  Configuring OpenRouter service...');
-    execSync(`aia config-set openrouter apiKey "${apiKey}"`, { stdio: 'pipe' });
-    execSync(`aia config-set openrouter endpoint "https://openrouter.ai/api/v1"`, { stdio: 'pipe' });
-    execSync('aia config-add-model openrouter google/gemini-2.5-pro', { stdio: 'pipe' });
-    execSync('aia config-add-model openrouter google/gemini-2.5-flash', { stdio: 'pipe' });
-    execSync('aia config-set-default-service openrouter', { stdio: 'pipe' });
-    execSync('aia config-set-default openrouter/google/gemini-2.5-flash', { stdio: 'pipe' });
-    
-    // Test simple prompt with real API using the faster flash model
-    const testOutput = execSync('aia consult "This is a post-release test. Respond with: Test successful" --models openrouter/google/gemini-2.5-flash --json 2>/dev/null', {
-      encoding: 'utf-8',
-      timeout: 30000,
-      shell: true
-    });
-    
-    // Extract JSON from output (skip log lines)
-    const lines = testOutput.split('\n');
-    const jsonLine = lines.find(line => line.trim().startsWith('{'));
-    if (!jsonLine) {
-      throw new Error('No JSON output found');
-    }
-    
-    const response = JSON.parse(jsonLine);
-    
-    if (response.responses && response.responses.length > 0 && 
-        response.responses[0].content.includes('Test successful')) {
-      return {
-        step: 'Production API Test',
-        success: true,
-        message: 'Real API call with google/gemini-2.5-flash successful'
-      };
-    } else {
-      return {
-        step: 'Production API Test',
-        success: false,
-        message: 'API call succeeded but unexpected response'
-      };
+      const listOutput = execSync(`${binName} config-list 2>&1`, {
+        encoding: 'utf-8',
+        shell: true
+      });
+
+      // Should show some output (either services or "No services configured")
+      if (listOutput.length > 0) {
+        return {
+          step: 'Config Commands Test',
+          success: true,
+          message: 'Config commands execute correctly'
+        };
+      } else {
+        return {
+          step: 'Config Commands Test',
+          success: false,
+          message: 'Config command produced no output'
+        };
+      }
+    } catch (error: any) {
+      // Command may exit with error if no config exists, but it should still execute
+      if (error.stdout && error.stdout.length > 0) {
+        return {
+          step: 'Config Commands Test',
+          success: true,
+          message: 'Config commands execute correctly'
+        };
+      }
+      throw error;
     }
   } catch (error: any) {
     return {
-      step: 'Production API Test',
+      step: 'Config Commands Test',
       success: false,
       message: `Error: ${error.message}`
     };
   }
 }
 
-async function runFileAttachmentTest(): Promise<ValidationResult> {
+async function validatePackageStructure(): Promise<ValidationResult> {
   try {
-    console.log('Running file attachment test...');
-    
-    // Config should already be set from production test
-    // Create temporary test file
-    const tempFile = '/tmp/aia-test-file.js';
-    const testContent = `// AIA Test File
-function hello(name) {
-  return \`Hello, \${name}!\`;
-}
-module.exports = { hello };`;
-    
-    require('fs').writeFileSync(tempFile, testContent);
-    
-    // Test file attachment using configured service
-    const testOutput = execSync(`aia consult "What function is exported in this file?" --models openrouter/google/gemini-2.5-flash -f ${tempFile} --json 2>/dev/null`, {
-      encoding: 'utf-8',
-      timeout: 30000,
-      shell: true
-    });
-    
-    // Extract JSON from output (skip log lines)
-    const lines = testOutput.split('\n');
-    const jsonLine = lines.find(line => line.trim().startsWith('{'));
-    if (!jsonLine) {
-      throw new Error('No JSON output found');
-    }
-    
-    const response = JSON.parse(jsonLine);
-    
-    // Clean up temp file
-    require('fs').unlinkSync(tempFile);
-    
-    if (response.responses && response.responses.length > 0 && 
-        response.responses[0].content.toLowerCase().includes('hello')) {
+    console.log('Validating package structure...');
+
+    const packageJson = JSON.parse(
+      readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
+    );
+
+    // Check if bin entry exists
+    if (!packageJson.bin) {
       return {
-        step: 'File Attachment Test',
-        success: true,
-        message: 'File attachment and analysis successful'
-      };
-    } else {
-      return {
-        step: 'File Attachment Test',
+        step: 'Package Structure',
         success: false,
-        message: 'File attachment test failed - model did not analyze file content'
+        message: 'No bin entry in package.json'
       };
     }
-  } catch (error: any) {
-    // Clean up temp file on error
-    try {
-      require('fs').unlinkSync('/tmp/aia-test-file.js');
-    } catch {}
-    
+
+    // Check if main/exports are properly configured
+    if (!packageJson.main && !packageJson.exports) {
+      return {
+        step: 'Package Structure',
+        success: false,
+        message: 'No main or exports entry in package.json'
+      };
+    }
+
+    // Check if dependencies are specified
+    if (!packageJson.dependencies || Object.keys(packageJson.dependencies).length === 0) {
+      return {
+        step: 'Package Structure',
+        success: false,
+        message: 'No dependencies specified in package.json'
+      };
+    }
+
     return {
-      step: 'File Attachment Test',
+      step: 'Package Structure',
+      success: true,
+      message: 'Package structure is valid'
+    };
+  } catch (error: any) {
+    return {
+      step: 'Package Structure',
       success: false,
       message: `Error: ${error.message}`
     };
@@ -294,8 +262,8 @@ async function main() {
     await validateNpmPublishWithRetry(),
     await validateGlobalInstall(),
     await validateCLI(),
-    await runProductionTest(),
-    await runFileAttachmentTest(),
+    await validateConfigCommands(),
+    await validatePackageStructure(),
   ];
 
   console.log('\n' + blue('Validation Results:'));

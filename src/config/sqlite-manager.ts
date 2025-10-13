@@ -46,10 +46,11 @@ export class SQLiteConfigManager {
   private static instance: SQLiteConfigManager;
   private db?: sqlite3.Database;
   private configCache?: AIAdvisorConfig;
-  
+
   // Configuration paths
   public CONFIG_DIR = process.env.AIA_CONFIG_DIR || join(homedir(), '.aia');
   public DB_FILE = join(this.CONFIG_DIR, 'config.db');
+  private keyPath = join(this.CONFIG_DIR, '.key');
   
   private constructor() {
     // Ensure config directory exists

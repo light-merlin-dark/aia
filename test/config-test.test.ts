@@ -23,7 +23,7 @@ describe('CLI Commands Structure', () => {
     it('should have models option that defaults when not specified', () => {
       expect(consultCommand.options.models).toBeDefined();
       expect(consultCommand.options.models.type).toBe('string');
-      expect(consultCommand.options.models.flag).toBe('m');
+      expect(consultCommand.options.models.alias).toBe('m');
       expect(consultCommand.options.models.required).toBe(false);
       expect(consultCommand.options.models.description).toContain('default model');
     });
@@ -37,24 +37,24 @@ describe('CLI Commands Structure', () => {
     it('should have file attachment options', () => {
       expect(consultCommand.options.files).toBeDefined();
       expect(consultCommand.options.files.type).toBe('string');
-      expect(consultCommand.options.files.flag).toBe('f');
+      expect(consultCommand.options.files.alias).toBe('f');
       expect(consultCommand.options.files.description).toContain('Files to attach');
 
       expect(consultCommand.options.dirs).toBeDefined();
       expect(consultCommand.options.dirs.type).toBe('string');
-      expect(consultCommand.options.dirs.flag).toBe('d');
+      expect(consultCommand.options.dirs.alias).toBe('d');
     });
 
     it('should have output formatting options', () => {
       expect(consultCommand.options.json).toBeDefined();
       expect(consultCommand.options.json.type).toBe('boolean');
-      
+
       expect(consultCommand.options['best-of']).toBeDefined();
       expect(consultCommand.options['best-of'].type).toBe('boolean');
-      
+
       expect(consultCommand.options.verbose).toBeDefined();
       expect(consultCommand.options.verbose.type).toBe('boolean');
-      expect(consultCommand.options.verbose.flag).toBe('v');
+      expect(consultCommand.options.verbose.alias).toBe('v');
     });
 
     it('should have helpful examples', () => {
