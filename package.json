@@ -1,14 +1,19 @@
 {
   "name": "@light-merlin-dark/aia",
   "version": "0.8.23",
-  "description": "AIA - Parallel AI model consultation CLI",
+  "description": "Parallel AI model consultation with intelligent failover. CLI & MCP Server. Automatic retry, real-time cost tracking.",
   "keywords": [
     "ai",
     "cli",
+    "mcp",
     "openai",
     "anthropic",
+    "claude",
+    "gpt",
     "llm",
-    "consultation"
+    "parallel",
+    "consultation",
+    "cost-tracking"
   ],
   "author": "Merlin",
   "license": "MIT",
