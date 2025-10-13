@@ -1,6 +1,6 @@
 {
   "name": "@light-merlin-dark/aia",
-  "version": "0.8.23",
+  "version": "0.8.24",
   "description": "Parallel AI model consultation with intelligent failover. CLI & MCP Server. Automatic retry, real-time cost tracking.",
   "keywords": [
     "ai",

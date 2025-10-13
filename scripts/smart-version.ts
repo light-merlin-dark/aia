@@ -18,7 +18,7 @@ function getLocalVersion(): string {
 
 function getNpmVersion(packageName: string): string | null {
   try {
-    const output = execSync(`npm view ${packageName} version`, {
+    const output = execSync(`npm view ${packageName} version --registry https://npm.hyper.gdn`, {
       encoding: 'utf-8',
     }).trim();
     return output;
@@ -77,38 +77,38 @@ async function main() {
   const localVersion = getLocalVersion();
   const npmVersion = getNpmVersion(packageJson.name);
   
-  console.log(`📦 Package: ${packageJson.name}`);
-  console.log(`📍 Local version: ${localVersion}`);
-  console.log(`🌐 NPM version: ${npmVersion || 'Not published'}`);
-  
+  console.log(`Package: ${packageJson.name}`);
+  console.log(`Local version: ${localVersion}`);
+  console.log(`NPM version: ${npmVersion || 'Not published'}`);
+
   if (!npmVersion) {
-    console.log('✅ Package not yet published. Ready for initial release!');
+    console.log('Package not yet published. Ready for initial release.');
     return;
   }
-  
+
   const comparison = compareVersions(localVersion, npmVersion);
-  
+
   if (comparison > 0) {
-    console.log('✅ Local version is ahead of npm. No bump needed.');
+    console.log('Local version is ahead of npm. No bump needed.');
     return;
   } else if (comparison === 0) {
     const newVersion = bumpVersion(npmVersion);
-    console.log(`⬆️  Bumping version from ${npmVersion} to ${newVersion}`);
+    console.log(`Bumping version from ${npmVersion} to ${newVersion}`);
     updatePackageVersion(newVersion);
-    console.log('✅ Version bumped successfully!');
+    console.log('Version bumped successfully.');
   } else {
     // Local version is behind npm (shouldn't happen)
-    console.error('❌ Local version is behind npm version!');
-    console.error('   This might indicate a sync issue.');
+    console.error('ERROR: Local version is behind npm version!');
+    console.error('This might indicate a sync issue.');
     const newVersion = bumpVersion(npmVersion);
-    console.log(`🔧 Auto-fixing: Setting version to ${newVersion}`);
+    console.log(`Auto-fixing: Setting version to ${newVersion}`);
     updatePackageVersion(newVersion);
-    console.log('✅ Version fixed!');
+    console.log('Version fixed.');
   }
 }
 
 // Run the script
 main().catch((error) => {
-  console.error('❌ Error:', error.message);
+  console.error('ERROR:', error.message);
   process.exit(1);
 });

@@ -26,11 +26,11 @@ async function validateNpmPublishWithRetry(maxRetries: number = 3, delayMs: numb
   );
   
   const startTime = Date.now();
-  console.log(`⏰ Starting NPM version validation with ${delayMs/1000}s initial delay...`);
-  
+  console.log(`Starting NPM version validation with ${delayMs/1000}s initial delay...`);
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`📡 Checking NPM registry (attempt ${attempt}/${maxRetries})...`);
+      console.log(`Checking NPM registry (attempt ${attempt}/${maxRetries})...`);
       
       const npmVersion = execSync(
         `npm view ${packageJson.name} version --registry https://npm.hyper.gdn`,
@@ -50,14 +50,14 @@ async function validateNpmPublishWithRetry(maxRetries: number = 3, delayMs: numb
       console.log(`   NPM: ${npmVersion}, Local: ${packageJson.version} - waiting for registry update...`);
       
       if (attempt < maxRetries) {
-        console.log(`⏳ Waiting ${delayMs/1000}s before next attempt...`);
+        console.log(`Waiting ${delayMs/1000}s before next attempt...`);
         await sleep(delayMs);
       }
       
     } catch (error: any) {
       console.log(`   Error checking NPM: ${error.message}`);
       if (attempt < maxRetries) {
-        console.log(`⏳ Waiting ${delayMs/1000}s before retry...`);
+        console.log(`Waiting ${delayMs/1000}s before retry...`);
         await sleep(delayMs);
       }
     }
@@ -90,11 +90,11 @@ async function validateGlobalInstall(): Promise<ValidationResult> {
     }
     
     if (isInstalled) {
-      console.log('📦 Uninstalling existing global installation...');
+      console.log('Uninstalling existing global installation...');
       execSync(`npm uninstall -g ${packageJson.name}`, { stdio: 'inherit' });
     }
-    
-    console.log('📦 Installing fresh global installation from private npm...');
+
+    console.log('Installing fresh global installation from private npm...');
     execSync(`npm install -g ${packageJson.name}@latest --registry https://npm.hyper.gdn`, { stdio: 'inherit' });
     return {
       step: 'Fresh Global Installation',
@@ -158,7 +158,7 @@ async function validateCLI(): Promise<ValidationResult> {
 
 async function runProductionTest(): Promise<ValidationResult> {
   try {
-    console.log('🧪 Running production API test...');
+    console.log('Running production API test...');
     
     // Get API key from m env
     let apiKey = '';
@@ -227,7 +227,7 @@ async function runProductionTest(): Promise<ValidationResult> {
 
 async function runFileAttachmentTest(): Promise<ValidationResult> {
   try {
-    console.log('📎 Running file attachment test...');
+    console.log('Running file attachment test...');
     
     // Config should already be set from production test
     // Create temporary test file
@@ -288,8 +288,8 @@ module.exports = { hello };`;
 }
 
 async function main() {
-  console.log(blue('🔍 Running post-release validation...\n'));
-  
+  console.log(blue('Running post-release validation...\n'));
+
   const validations = [
     await validateNpmPublishWithRetry(),
     await validateGlobalInstall(),
@@ -297,32 +297,32 @@ async function main() {
     await runProductionTest(),
     await runFileAttachmentTest(),
   ];
-  
-  console.log('\n' + blue('📊 Validation Results:'));
+
+  console.log('\n' + blue('Validation Results:'));
   console.log('='.repeat(50));
-  
+
   validations.forEach(result => {
-    const icon = result.success ? green('✅') : red('❌');
+    const icon = result.success ? green('[PASS]') : red('[FAIL]');
     const statusColor = result.success ? green : red;
     console.log(`${icon} ${statusColor(result.step)}`);
     console.log(`   ${result.message}`);
   });
-  
+
   const allPassed = validations.every(v => v.success);
   const passedCount = validations.filter(v => v.success).length;
   const totalCount = validations.length;
-  
+
   console.log('\n' + '='.repeat(50));
   console.log(`Summary: ${passedCount}/${totalCount} validations passed`);
-  
+
   if (allPassed) {
-    console.log('\n' + green('🎉 All validations passed!'));
+    console.log('\n' + green('All validations passed!'));
     console.log(yellow('\nNext steps:'));
     console.log('1. Test the MCP integration with Claude Desktop');
     console.log('2. Update documentation if needed');
     console.log('3. Create a GitHub release');
   } else {
-    console.log('\n' + red('❌ Some validations failed!'));
+    console.log('\n' + red('Some validations failed!'));
     console.log(yellow('\nTroubleshooting:'));
     console.log('1. Check npm publish logs');
     console.log('2. Verify package.json bin paths');
@@ -334,6 +334,6 @@ async function main() {
 
 // Run validation
 main().catch((error) => {
-  console.error(red('❌ Validation error:'), error.message);
+  console.error(red('Validation error:'), error.message);
   process.exit(1);
 });
