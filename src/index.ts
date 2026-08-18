@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { createCLI } from '@merlin/cli';
+import { createCLI } from '@light-merlin-dark/merlin-cli';
 
 
 // Import all commands eagerly for a snappy CLI experience

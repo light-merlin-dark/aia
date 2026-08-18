@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { SmartRelease } from '@merlin/cli';
+import { SmartRelease } from './vendor/smart-release.js';
 
 const release = new SmartRelease({
   packageName: '@light-merlin-dark/aia',

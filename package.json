@@ -27,6 +27,7 @@
     "src/**/*",
     "plugins/**/*",
     "scripts/release.ts",
+    "scripts/vendor/**/*",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
@@ -45,8 +46,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.0",
+    "@light-merlin-dark/merlin-cli": "^1.2.0",
     "@light-merlin-dark/tok": "^0.1.2",
-    "@merlin/cli": "^1.0.6",
     "chalk": "^5.3.0",
     "glob": "^10.3.10",
     "openai": "^4.52.0",

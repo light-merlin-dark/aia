@@ -75,8 +75,8 @@ describe('CLI Commands Structure', () => {
   });
 
   describe('Command Line Arguments', () => {
-    it('should properly structure arguments for @merlin/cli', () => {
-      // Verify the command follows @merlin/cli conventions
+    it('should properly structure arguments for @light-merlin-dark/merlin-cli', () => {
+      // Verify the command follows @light-merlin-dark/merlin-cli conventions
       expect(consultCommand).toHaveProperty('name');
       expect(consultCommand).toHaveProperty('description');
       expect(consultCommand).toHaveProperty('usage');

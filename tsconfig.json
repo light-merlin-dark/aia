@@ -25,6 +25,6 @@
       "@test-utils": ["tests/test-utils"]
     }
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "tests/**/*", "scripts/release.ts", "scripts/vendor/**/*"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,4 +1,4 @@
-import { createCommand } from '@merlin/cli';
+import { createCommand } from '@light-merlin-dark/merlin-cli';
 import { orchestrate } from '../core/orchestrator.js';
 import { buildPrompt } from '../core/prompt-builder.js';
 import { FileResolver } from '../services/file-resolver.js';

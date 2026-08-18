@@ -1,4 +1,4 @@
-import { createCommand } from '@merlin/cli';
+import { createCommand } from '@light-merlin-dark/merlin-cli';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';

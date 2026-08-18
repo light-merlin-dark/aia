@@ -1,4 +1,4 @@
-import { createCommand } from '@merlin/cli';
+import { createCommand } from '@light-merlin-dark/merlin-cli';
 import { ConfigManager } from '../config/manager.js';
 import { maskValue } from '../config/crypto.js';
 import chalk from 'chalk';

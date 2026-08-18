@@ -1,4 +1,4 @@
-import { createCommand } from '@merlin/cli';
+import { createCommand } from '@light-merlin-dark/merlin-cli';
 import { ConfigManager } from '../config/manager.js';
 import chalk from 'chalk';
 import prompts from 'prompts';
