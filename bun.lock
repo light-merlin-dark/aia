@@ -6,7 +6,7 @@
       "name": "ai-advisor",
       "dependencies": {
         "@anthropic-ai/sdk": "^0.24.0",
-        "@light-merlin-dark/merlin-cli": "^1.2.0",
+        "@light-merlin-dark/merlin-cli": "^2.0.2",
         "@light-merlin-dark/tok": "^0.1.2",
         "chalk": "^5.3.0",
         "glob": "^10.3.10",
@@ -51,7 +51,7 @@
 
     "@isaacs/cliui": ["@isaacs/cliui@8.0.2", "", { "dependencies": { "string-width": "^5.1.2", "string-width-cjs": "npm:string-width@^4.2.0", "strip-ansi": "^7.0.1", "strip-ansi-cjs": "npm:strip-ansi@^6.0.1", "wrap-ansi": "^8.1.0", "wrap-ansi-cjs": "npm:wrap-ansi@^7.0.0" } }, "sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA=="],
 
-    "@light-merlin-dark/merlin-cli": ["@light-merlin-dark/merlin-cli@1.2.0", "", { "dependencies": { "picocolors": "^1.0.0", "prompts": "^2.4.2" }, "peerDependencies": { "bun": ">=1.0.0" }, "optionalPeers": ["bun"] }, "sha512-dVuz0CsLvA/20t0+KpwkebiVBSeo1AAar1VGRBUiD2iz9W8RqH8CwrphlHOS3gdSR1HglN6QkmQw7cNf4sfzFg=="],
+    "@light-merlin-dark/merlin-cli": ["@light-merlin-dark/merlin-cli@2.0.2", "", { "peerDependencies": { "bun": ">=1.0.0" }, "optionalPeers": ["bun"] }, "sha512-pwFt5BZ8QcDWgiuuw+C9S8Br6RL4wZ7RZGmfyAYVcGOCCjmar6nQ3SX0VKiLNJ2U8Lijta4a5UTvQtrQX5Y8kw=="],
 
     "@light-merlin-dark/tok": ["@light-merlin-dark/tok@0.1.2", "", { "dependencies": { "@modelcontextprotocol/sdk": "^1.12.1", "chalk": "^5.3.0", "zod": "^3.22.4" }, "optionalDependencies": { "@dqbd/tiktoken": "^1.0.0" }, "bin": { "tok": "dist/cli/main.js", "tok-mcp": "dist/mcp-server.js" } }, "sha512-enUFCySPGmTJBZVqnFYeLlYYHi4zxRFjA3P4Olwg7DIOInSMBCX83EwK18ZQvLtd2JY/8+LSm7XcyhlDem/y0Q=="],
 
@@ -522,8 +522,6 @@
     "path-to-regexp": ["path-to-regexp@8.2.0", "", {}, "sha512-TdrF7fW9Rphjq4RjrW0Kp2AW0Ahwu9sRGTkS6bvDi0SCwZlEZYmcfDbEsTz8RVk0EHIS/Vd1bv3JhG+1xZuAyQ=="],
 
     "path-type": ["path-type@4.0.0", "", {}, "sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw=="],
-
-    "picocolors": ["picocolors@1.1.1", "", {}, "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="],
 
     "picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
 
